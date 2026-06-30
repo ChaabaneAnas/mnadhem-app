@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+/// Supported courier integrations
+enum Courier {
+  YALIDINE
+  ARAMEX
+  JEXPORT
+}
+
+/// State machine for a shipment, driven by courier webhook events.
+/// Transitions:
+///   PENDING → EN_COURS  : courier confirms pickup  (stock Available → Reserved)
+///   EN_COURS → LIVRE    : delivery confirmed        (stock Physical & Reserved ↓)
+///   EN_COURS → RETOURNE : refusal / return          (stock Reserved ↓, Available ↑)
+///   EN_COURS → HORS_ZONE: undeliverable zone        (treated same as RETOURNE)
+enum ShipmentStatus {
+  PENDING
+  EN_COURS
+  LIVRE
+  RETOURNE
+  HORS_ZONE
+}
+
+/// Roles a team member can hold within a tenant workspace
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+/// Merchant-facing business state of an order, driven by merchant actions and courier webhooks.
+/// Runs in parallel with ShipmentStatus (the courier-facing logistics state).
+/// Transitions:
+///   PENDING_FULFILLMENT → PROCESSING : EN_COURS webhook (stock already reserved, no mutation)
+///   PENDING_FULFILLMENT → CANCELLED  : merchant cancels (stock rollback: Available++, Reserved--)
+///   PROCESSING → DELIVERED            : LIVRE webhook (Physical--, Reserved--)
+///   PROCESSING → RETURNED             : RETOURNE / HORS_ZONE webhook (Reserved--, Available++)
+enum OrderStatus {
+  PENDING_FULFILLMENT
+  PROCESSING
+  DELIVERED
+  RETURNED
+  CANCELLED
+}
+
+/// How the tenant captures orders — determines onboarding path and sync-warning behaviour.
+enum StoreType {
+  MANUAL
+  SHOPIFY
+  WOOCOMMERCE
+}
+
+// ---------------------------------------------------------------------------
+// Identity & Multi-Tenancy
+// ---------------------------------------------------------------------------
+
+/// Platform-level user account. A user can belong to multiple tenant workspaces.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships TenantMember[]
+}
+
+/// An independent merchant workspace. Stores its own courier API keys,
+/// product catalog, orders, and team members in full isolation.
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  /// URL-safe unique identifier used in routing and webhook paths
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// How this tenant captures orders — drives onboarding path and sync-warning guardrails
+  storeType StoreType @default(MANUAL)
+
+  /// Per-tenant courier API credentials (nullable until configured)
+  yalidineApiKey String?
+  aramexApiKey   String?
+  jexportApiKey  String?
+
+  members       TenantMember[]
+  products      Product[]
+  orders        Order[]
+  webhookEvents WebhookEvent[]
+}
+
+/// Junction table granting a User access to a Tenant with a specific Role.
+model TenantMember {
+  id       String   @id @default(cuid())
+  role     Role     @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+}
+
+// ---------------------------------------------------------------------------
+// Inventory
+// ---------------------------------------------------------------------------
+
+/// A top-level product in a tenant's catalog.
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  /// Merchant's own SKU reference (optional, unique per tenant)
+  sku         String?
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  /// Soft-delete timestamp — null means active, set means archived
+  deletedAt   DateTime?
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  variants Variant[]
+
+  @@unique([tenantId, sku])
+}
+
+/// A specific Color/Size (or any attribute) combination of a Product.
+/// Holds the three-column inventory engine that is Mnadhem's core.
+model Variant {
+  id    String  @id @default(cuid())
+  /// Human-readable label e.g. "Blue / XL"
+  name  String
+  color String?
+  size  String?
+  /// Variant-level SKU (optional, unique per product)
+  sku   String?
+  /// Selling price at the time this variant was created
+  price Decimal @db.Decimal(10, 2)
+
+  // --- Triple-state inventory (all mutations must run inside a $transaction) ---
+  /// Actual physical units sitting in the merchant's warehouse
+  stockPhysical  Int @default(0)
+  /// Units packed and currently in-transit with a courier
+  stockReserved  Int @default(0)
+  /// Units safe to sell: stockPhysical - stockReserved
+  stockAvailable Int @default(0)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft-delete timestamp — null means active, set means archived
+  deletedAt DateTime?
+
+  orderItems OrderItem[]
+
+  @@unique([productId, sku])
+}
+
+// ---------------------------------------------------------------------------
+// Orders & Shipments
+// ---------------------------------------------------------------------------
+
+/// A COD order placed by a customer. Regional data (wilaya) powers
+/// the Governorate Risk Matrix for refusal-rate analytics.
+model Order {
+  id        String @id @default(cuid())
+  /// Merchant's own order reference number
+  reference String @unique
+
+  /// Total Cash on Delivery amount to be collected from the customer
+  codAmount Decimal @db.Decimal(10, 2)
+
+  // Customer details
+  customerName  String
+  customerPhone String
+
+  // Regional fields for the refusal-rate risk matrix
+  /// Governorate / Wilaya — primary grouping key for analytics
+  wilaya  String
+  commune String?
+  address String?
+
+  /// Merchant-facing business state (see OrderStatus enum for transition rules)
+  status OrderStatus @default(PENDING_FULFILLMENT)
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft-delete timestamp — null means active, set means archived
+  deletedAt DateTime?
+
+  items    OrderItem[]
+  shipment Shipment?
+}
+
+/// Line item linking an Order to a specific Variant at a locked-in price.
+model OrderItem {
+  id        String  @id @default(cuid())
+  quantity  Int
+  /// Price per unit captured at order creation time
+  unitPrice Decimal @db.Decimal(10, 2)
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  variantId String
+  variant   Variant @relation(fields: [variantId], references: [id])
+
+  @@unique([orderId, variantId])
+}
+
+/// Tracks the courier assignment, tracking number, and live delivery state
+/// for a single Order. Also records floating-capital remittance.
+model Shipment {
+  id             String         @id @default(cuid())
+  trackingNumber String         @unique
+  courier        Courier
+  status         ShipmentStatus @default(PENDING)
+
+  /// Cash collected from the customer by the courier (set on LIVRE)
+  collectedCash Decimal?  @db.Decimal(10, 2)
+  /// Timestamp when the courier remitted the collected cash back to the merchant.
+  /// Null until remittance occurs — used to compute total Floating Capital.
+  remittedAt    DateTime?
+
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  webhookEvents WebhookEvent[]
+}
+
+// ---------------------------------------------------------------------------
+// Audit & Traceability
+// ---------------------------------------------------------------------------
+
+/// Immutable ledger entry for every courier webhook received.
+/// Never updated or deleted — provides a full audit trail of all
+/// inventory state changes and delivery events.
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  courier     Courier
+  /// Raw event-type string as received from the courier (e.g. "En Cours", "Livré")
+  eventType   String
+  /// Complete raw webhook payload for forensic traceability
+  payload     Json
+  processedAt DateTime @default(now())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  /// Nullable: event may arrive before a Shipment record is matched
+  shipmentId String?
+  shipment   Shipment? @relation(fields: [shipmentId], references: [id])
+
+  /// JSON snapshot of the inventory mutation applied, e.g.:
+  /// { "variantId": "...", "physicalDelta": -1, "reservedDelta": -1 }
+  stockDelta Json?
+}

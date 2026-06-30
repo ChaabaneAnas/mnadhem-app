@@ -32,3 +32,6 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# corrupted artifact (fullwidth-colon duplicate of next.config.ts)
+C*next.config.ts
