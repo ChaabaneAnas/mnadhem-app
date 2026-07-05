@@ -462,9 +462,10 @@ function BulkImportPanel({ onClose }: { onClose: () => void }) {
               type="file"
               accept=".csv,.txt"
               onChange={handleFile}
-              className="pt-1.5 text-xs text-muted-foreground file:mr-3 file:rounded-md file:bg-secondary file:px-3 file:text-xs file:font-medium file:text-foreground hover:file:bg-secondary/80 transition-colors"
+              className="border-none shadow-none pt-1.5 text-xs text-muted-foreground file:mr-3 file:rounded-md file:bg-secondary file:px-3 file:text-xs file:font-medium file:text-foreground hover:file:bg-secondary/80 transition-colors"
             />
           </div>
+
 
           {/* Success banner */}
           {result && (
