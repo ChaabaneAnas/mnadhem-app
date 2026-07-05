@@ -5,6 +5,10 @@ import { Plus, X, Search, Trash2, AlertCircle } from 'lucide-react';
 import { createManualOrder, cancelOrder, type CreateOrderPayload } from './actions';
 import { formatTND } from '@/lib/format';
 import { ORDER_STATUS, type OrderStatus } from '@/lib/order-status';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -75,17 +79,17 @@ function generateRef() {
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-lg border border-slate-200 shadow-lg w-full max-w-md">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors">
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent showCloseButton={false} className="bg-white border-slate-200 shadow-lg p-0 gap-0 w-full max-w-md">
+        <DialogHeader className="flex-row items-center justify-between space-y-0 px-5 py-4 border-b border-slate-100">
+          <DialogTitle className="text-sm font-semibold text-slate-900">{title}</DialogTitle>
+          <Button variant="ghost" size="icon-sm" onClick={onClose} className="text-slate-400 hover:bg-transparent hover:text-slate-700 transition-colors">
             <X size={16} />
-          </button>
-        </div>
+          </Button>
+        </DialogHeader>
         <div className="px-5 py-4">{children}</div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -116,12 +120,12 @@ function CancelModal({ order, onClose }: { order: Order; onClose: () => void }) 
         <div className="mb-3 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{error}</div>
       )}
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-md border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors">
+        <Button type="button" variant="outline" size="sm" onClick={onClose} className="rounded-md border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-600 transition-colors">
           Keep order
-        </button>
-        <button type="button" onClick={handleCancel} disabled={pending} className="px-3 py-1.5 rounded-md bg-red-600 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
+        </Button>
+        <Button type="button" variant="destructive" size="sm" onClick={handleCancel} disabled={pending} className="rounded-md bg-red-600 text-xs font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
           {pending ? 'Cancelling…' : 'Cancel order'}
-        </button>
+        </Button>
       </div>
     </Modal>
   );
@@ -205,15 +209,18 @@ function CreateOrderSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <button className="flex-1 bg-black/40" onClick={onClose} />
-      <div className="w-full max-w-lg bg-white border-l border-slate-200 flex flex-col h-full">
+    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent
+        side="right"
+        showCloseButton={false}
+        className="w-full max-w-lg bg-white border-slate-200 flex flex-col h-full p-0 gap-0"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
-          <h2 className="text-sm font-semibold text-slate-900">New order</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors">
+          <SheetTitle className="text-sm font-semibold text-slate-900">New order</SheetTitle>
+          <Button variant="ghost" size="icon-sm" onClick={onClose} className="text-slate-400 hover:bg-transparent hover:text-slate-700 transition-colors">
             <X size={16} />
-          </button>
+          </Button>
         </div>
 
         {/* Body */}
@@ -271,11 +278,12 @@ function CreateOrderSheet({
               {showPicker && filteredVariants.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                   {filteredVariants.map((v) => (
-                    <button
+                    <Button
                       key={v.id}
                       type="button"
+                      variant="ghost"
                       onClick={() => addVariant(v)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 transition-colors text-left border-b border-slate-100 last:border-0"
+                      className="h-auto w-full flex items-center justify-between whitespace-normal rounded-none px-3 py-2.5 hover:bg-slate-50 transition-colors text-left border-b border-slate-100 last:border-0"
                     >
                       <div>
                         <p className="text-xs font-medium text-slate-800">{v.productName}</p>
@@ -287,7 +295,7 @@ function CreateOrderSheet({
                           {v.stockAvailable} ready
                         </p>
                       </div>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
@@ -300,25 +308,25 @@ function CreateOrderSheet({
               </p>
             ) : (
               <div className="rounded-lg border border-slate-200 overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-slate-50">
-                      <th className="px-3 py-2 text-left font-medium text-slate-500">Item</th>
-                      <th className="px-3 py-2 text-right font-medium text-slate-500">Price</th>
-                      <th className="px-3 py-2 text-right font-medium text-slate-500">Qty</th>
-                      <th className="px-3 py-2 text-right font-medium text-slate-500">Total</th>
-                      <th className="px-3 py-2 w-8" />
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table className="text-xs">
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 hover:bg-slate-50">
+                      <TableHead className="px-3 py-2 text-left font-medium text-slate-500 h-auto">Item</TableHead>
+                      <TableHead className="px-3 py-2 text-right font-medium text-slate-500 h-auto">Price</TableHead>
+                      <TableHead className="px-3 py-2 text-right font-medium text-slate-500 h-auto">Qty</TableHead>
+                      <TableHead className="px-3 py-2 text-right font-medium text-slate-500 h-auto">Total</TableHead>
+                      <TableHead className="px-3 py-2 w-8 h-auto" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {lineItems.map((item) => (
-                      <tr key={item.variantId} className="border-t border-slate-100">
-                        <td className="px-3 py-2">
+                      <TableRow key={item.variantId} className="border-t border-slate-100">
+                        <TableCell className="px-3 py-2 whitespace-normal">
                           <p className="font-medium text-slate-800">{item.productName}</p>
                           <p className="text-slate-500">{item.variantName}</p>
-                        </td>
-                        <td className="px-3 py-2 text-right text-slate-700 tabular-nums">{formatTND(item.price)}</td>
-                        <td className="px-3 py-2 text-right">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-right text-slate-700 tabular-nums">{formatTND(item.price)}</TableCell>
+                        <TableCell className="px-3 py-2 text-right">
                           <input
                             type="number"
                             min="1"
@@ -326,19 +334,19 @@ function CreateOrderSheet({
                             onChange={(e) => updateQty(item.variantId, parseInt(e.target.value, 10))}
                             className="w-14 rounded border border-slate-300 px-2 py-1 text-xs text-right text-slate-900 focus:border-slate-500 focus:outline-none"
                           />
-                        </td>
-                        <td className="px-3 py-2 text-right font-medium text-slate-800 tabular-nums">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-right font-medium text-slate-800 tabular-nums">
                           {formatTND(item.price * item.quantity)}
-                        </td>
-                        <td className="px-3 py-2">
-                          <button type="button" onClick={() => removeItem(item.variantId)} className="text-slate-300 hover:text-red-500 transition-colors">
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
+                          <Button type="button" variant="ghost" size="icon-xs" onClick={() => removeItem(item.variantId)} className="text-slate-300 hover:bg-transparent hover:text-red-500 transition-colors">
                             <Trash2 size={13} />
-                          </button>
-                        </td>
-                      </tr>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
           </div>
@@ -379,20 +387,21 @@ function CreateOrderSheet({
 
         {/* Footer */}
         <div className="shrink-0 px-5 py-4 border-t border-slate-100 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-md border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors">
+          <Button type="button" variant="outline" size="sm" onClick={onClose} className="rounded-md border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-600 transition-colors">
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            size="sm"
             form="create-order-form"
             disabled={pending || lineItems.length === 0}
-            className="px-4 py-1.5 rounded-md bg-green-900 text-xs font-medium text-white hover:bg-green-800 disabled:opacity-40 transition-colors"
+            className="rounded-md text-xs font-medium disabled:opacity-40 transition-colors"
           >
             {pending ? 'Creating…' : 'Create order'}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -419,13 +428,14 @@ export function OrdersClient({
               {orders.length} order{orders.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <button
+          <Button
+            size="sm"
             onClick={() => setCreateOpen(true)}
-            className="flex items-center gap-1.5 rounded-md bg-green-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-800 transition-colors"
+            className="flex items-center gap-1.5 rounded-md text-xs font-medium transition-colors"
           >
             <Plus size={13} />
             New order
-          </button>
+          </Button>
         </div>
 
         {/* Empty state */}
@@ -435,57 +445,59 @@ export function OrdersClient({
             <p className="mt-1 text-xs text-slate-400">
               Create your first order to start tracking your COD pipeline and reserve stock.
             </p>
-            <button
+            <Button
+              size="sm"
               onClick={() => setCreateOpen(true)}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-green-900 px-4 py-2 text-xs font-medium text-white hover:bg-green-800 transition-colors"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-md text-xs font-medium transition-colors"
             >
               <Plus size={13} />
               Create first order
-            </button>
+            </Button>
           </div>
         ) : (
           /* Orders table */
           <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
+            <Table className="text-sm">
+              <TableHeader>
+                <TableRow className="bg-slate-50 border-b border-slate-200 hover:bg-slate-50">
                   {['Reference', 'Customer', 'Wilaya', 'COD Amount', 'Courier', 'Status', ''].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide last:w-20">
+                    <TableHead key={h} className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide last:w-20 h-auto">
                       {h}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {orders.map((order) => {
                   const cfg = ORDER_STATUS[order.status] ?? ORDER_STATUS.PENDING_FULFILLMENT;
                   return (
-                    <tr key={order.id} className="border-b border-slate-100 hover:bg-slate-50/50">
-                      <td className="px-4 py-3 font-mono text-xs text-slate-700">{order.reference}</td>
-                      <td className="px-4 py-3 text-sm text-slate-700">{order.customerName}</td>
-                      <td className="px-4 py-3 text-sm text-slate-500">{order.wilaya}</td>
-                      <td className="px-4 py-3 text-sm text-slate-700 tabular-nums">{formatTND(order.codAmount)}</td>
-                      <td className="px-4 py-3 text-xs text-slate-400">{order.shipment?.courier ?? '—'}</td>
-                      <td className="px-4 py-3">
+                    <TableRow key={order.id} className="border-b border-slate-100 hover:bg-slate-50/50">
+                      <TableCell className="px-4 py-3 font-mono text-xs text-slate-700">{order.reference}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-slate-700">{order.customerName}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-slate-500">{order.wilaya}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-slate-700 tabular-nums">{formatTND(order.codAmount)}</TableCell>
+                      <TableCell className="px-4 py-3 text-xs text-slate-400">{order.shipment?.courier ?? '—'}</TableCell>
+                      <TableCell className="px-4 py-3">
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${cfg.classes}`}>
                           {cfg.label}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right">
                         {order.status === 'PENDING_FULFILLMENT' && (
-                          <button
+                          <Button
+                            variant="link"
                             onClick={() => setCancellingOrder(order)}
-                            className="text-xs text-slate-400 hover:text-red-600 transition-colors"
+                            className="h-auto p-0 text-xs text-slate-400 hover:text-red-600 hover:no-underline transition-colors"
                           >
                             Cancel
-                          </button>
+                          </Button>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>

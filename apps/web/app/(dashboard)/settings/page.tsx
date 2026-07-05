@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
@@ -82,12 +83,12 @@ export default function SettingsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
+          <Button
             type="submit"
-            className="rounded-md bg-green-900 px-5 py-2 text-sm font-medium text-white hover:bg-green-800 transition-colors"
+            className="rounded-md text-sm font-medium transition-colors"
           >
             Save changes
-          </button>
+          </Button>
           {saved && <span className="text-xs text-green-700">Saved successfully.</span>}
         </div>
       </form>

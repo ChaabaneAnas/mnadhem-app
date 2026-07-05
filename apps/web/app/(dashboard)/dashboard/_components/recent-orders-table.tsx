@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { formatTND } from '@/lib/format';
 import { ORDER_STATUS, type OrderStatus } from '@/lib/order-status';
 
@@ -115,25 +116,29 @@ export function RecentOrdersTable({ orders }: { orders: Order[] }) {
             {filtered.length}
           </span>
           <div className="flex items-center gap-1">
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={safePage === 0}
               aria-label="Previous page"
-              className="rounded-md p-1 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              className="rounded-md hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent focus-visible:ring-2 focus-visible:ring-slate-400"
             >
               <ChevronLeft size={16} />
-            </button>
+            </Button>
             <span className="tabular-nums">
               {safePage + 1} / {pageCount}
             </span>
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
               disabled={safePage >= pageCount - 1}
               aria-label="Next page"
-              className="rounded-md p-1 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              className="rounded-md hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent focus-visible:ring-2 focus-visible:ring-slate-400"
             >
               <ChevronRight size={16} />
-            </button>
+            </Button>
           </div>
         </div>
       )}

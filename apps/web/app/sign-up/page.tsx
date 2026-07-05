@@ -3,6 +3,7 @@ import { signIn } from '@/auth';
 import bcrypt from 'bcryptjs';
 import { prisma, Role } from '@mnadhem/database';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default async function SignUpPage({
   searchParams,
@@ -112,10 +113,10 @@ export default async function SignUpPage({
               </div>
             </div>
 
-            <button type="submit"
-              className="w-full rounded-md bg-green-900 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 transition-colors">
+            <Button type="submit"
+              className="w-full rounded-md text-sm font-medium transition-colors">
               Create account
-            </button>
+            </Button>
           </form>
         </div>
 

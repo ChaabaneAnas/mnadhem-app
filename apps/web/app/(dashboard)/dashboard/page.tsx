@@ -7,6 +7,7 @@ import { OrdersChart } from './_components/orders-chart';
 import { RecentOrdersTable } from './_components/recent-orders-table';
 import { InventoryTable } from './_components/inventory-table';
 import { RangeSelect } from './_components/range-select';
+import { buttonVariants } from '@/components/ui/button';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -100,7 +101,7 @@ export default async function DashboardPage({
           <RangeSelect value={String(days)} />
           <Link
             href="/orders"
-            className="flex items-center gap-1.5 rounded-md bg-green-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-900 focus-visible:ring-offset-2"
+            className={buttonVariants({ size: 'sm' })}
           >
             <Plus size={13} />
             New Order

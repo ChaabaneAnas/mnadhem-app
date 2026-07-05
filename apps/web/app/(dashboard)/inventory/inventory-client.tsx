@@ -7,6 +7,9 @@ import {
   createVariant, updateVariant, deleteVariant,
   adjustStock, bulkCreateProducts,
 } from './actions';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -86,17 +89,17 @@ function Modal({
   width?: string;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className={`bg-white rounded-lg border border-slate-200 shadow-lg w-full ${width} max-h-[90vh] overflow-y-auto`}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors">
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent showCloseButton={false} className={`bg-white border-slate-200 shadow-lg p-0 gap-0 ${width} max-h-[90vh] overflow-y-auto`}>
+        <DialogHeader className="flex-row items-center justify-between space-y-0 px-5 py-4 border-b border-slate-100">
+          <DialogTitle className="text-sm font-semibold text-slate-900">{title}</DialogTitle>
+          <Button variant="ghost" size="icon-sm" onClick={onClose} className="text-slate-400 hover:bg-transparent hover:text-slate-700 transition-colors">
             <X size={16} />
-          </button>
-        </div>
+          </Button>
+        </DialogHeader>
         <div className="px-5 py-4">{children}</div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -154,12 +157,12 @@ function ProductModal({
           <input name="description" defaultValue={product?.description ?? ''} className={INPUT} placeholder="Optional notes" />
         </div>
         <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-md border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors">
+          <Button type="button" variant="outline" size="sm" onClick={onClose} className="rounded-md border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-600 transition-colors">
             Cancel
-          </button>
-          <button type="submit" disabled={pending} className="px-3 py-1.5 rounded-md bg-green-900 text-xs font-medium text-white hover:bg-green-800 disabled:opacity-50 transition-colors">
+          </Button>
+          <Button type="submit" size="sm" disabled={pending} className="rounded-md text-xs font-medium disabled:opacity-50 transition-colors">
             {pending ? 'Saving…' : isEdit ? 'Save changes' : 'Add product'}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -230,12 +233,12 @@ function VariantModal({
           </div>
         )}
         <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-md border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors">
+          <Button type="button" variant="outline" size="sm" onClick={onClose} className="rounded-md border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-600 transition-colors">
             Cancel
-          </button>
-          <button type="submit" disabled={pending} className="px-3 py-1.5 rounded-md bg-green-900 text-xs font-medium text-white hover:bg-green-800 disabled:opacity-50 transition-colors">
+          </Button>
+          <Button type="submit" size="sm" disabled={pending} className="rounded-md text-xs font-medium disabled:opacity-50 transition-colors">
             {pending ? 'Saving…' : isEdit ? 'Save changes' : 'Add variant'}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -282,12 +285,12 @@ function AdjustStockModal({ variant, onClose }: { variant: Variant; onClose: () 
           </p>
         </div>
         <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-md border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors">
+          <Button type="button" variant="outline" size="sm" onClick={onClose} className="rounded-md border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-600 transition-colors">
             Cancel
-          </button>
-          <button type="submit" disabled={pending} className="px-3 py-1.5 rounded-md bg-green-900 text-xs font-medium text-white hover:bg-green-800 disabled:opacity-50 transition-colors">
+          </Button>
+          <Button type="submit" size="sm" disabled={pending} className="rounded-md text-xs font-medium disabled:opacity-50 transition-colors">
             {pending ? 'Applying…' : 'Apply adjustment'}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>
@@ -327,12 +330,12 @@ function DeleteModal({
       </p>
       <FormError message={error} />
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-md border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors">
+        <Button type="button" variant="outline" size="sm" onClick={onClose} className="rounded-md border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-600 transition-colors">
           Cancel
-        </button>
-        <button type="button" onClick={handleConfirm} disabled={pending} className="px-3 py-1.5 rounded-md bg-red-600 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
+        </Button>
+        <Button type="button" variant="destructive" size="sm" onClick={handleConfirm} disabled={pending} className="rounded-md bg-red-600 text-xs font-medium hover:bg-red-700 disabled:opacity-50 transition-colors">
           {pending ? 'Archiving…' : 'Archive'}
-        </button>
+        </Button>
       </div>
     </Modal>
   );
@@ -364,16 +367,18 @@ function SyncWarningModal({
         </p>
       </div>
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-md border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors">
+        <Button type="button" variant="outline" size="sm" onClick={onClose} className="rounded-md border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-600 transition-colors">
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => { onProceed(); onClose(); }}
-          className="px-3 py-1.5 rounded-md border border-amber-300 bg-amber-50 text-xs font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+          className="rounded-md border-amber-300 bg-amber-50 text-xs font-medium text-amber-800 hover:bg-amber-100 hover:text-amber-800 transition-colors"
         >
           Proceed anyway
-        </button>
+        </Button>
       </div>
     </Modal>
   );
@@ -426,16 +431,17 @@ function BulkImportPanel({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      {/* Backdrop */}
-      <button className="flex-1 bg-black/40" onClick={onClose} />
-      {/* Panel */}
-      <div className="w-full max-w-lg bg-white border-l border-slate-200 flex flex-col h-full overflow-hidden">
+    <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent
+        side="right"
+        showCloseButton={false}
+        className="w-full max-w-lg bg-white border-slate-200 flex flex-col h-full p-0 gap-0 overflow-hidden"
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
-          <h2 className="text-sm font-semibold text-slate-900">Bulk import products</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors">
+          <SheetTitle className="text-sm font-semibold text-slate-900">Bulk import products</SheetTitle>
+          <Button variant="ghost" size="icon-sm" onClick={onClose} className="text-slate-400 hover:bg-transparent hover:text-slate-700 transition-colors">
             <X size={16} />
-          </button>
+          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
@@ -519,20 +525,21 @@ function BulkImportPanel({ onClose }: { onClose: () => void }) {
 
         {/* Footer */}
         <div className="shrink-0 px-5 py-4 border-t border-slate-100 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="px-3 py-1.5 rounded-md border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 transition-colors">
+          <Button type="button" variant="outline" size="sm" onClick={onClose} className="rounded-md border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-600 transition-colors">
             Close
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            size="sm"
             onClick={handleImport}
             disabled={validRows.length === 0 || pending}
-            className="px-3 py-1.5 rounded-md bg-green-900 text-xs font-medium text-white hover:bg-green-800 disabled:opacity-40 transition-colors"
+            className="rounded-md text-xs font-medium disabled:opacity-40 transition-colors"
           >
             {pending ? 'Importing…' : `Import ${validRows.length} product${validRows.length !== 1 ? 's' : ''}`}
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -581,20 +588,23 @@ export function InventoryClient({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setBulkImportOpen(true)}
-              className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-1.5 rounded-md border-slate-200 bg-white text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-600 transition-colors"
             >
               <Upload size={13} />
               Bulk import
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={() => setAddProduct(true)}
-              className="flex items-center gap-1.5 rounded-md bg-green-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-800 transition-colors"
+              className="flex items-center gap-1.5 rounded-md text-xs font-medium transition-colors"
             >
               <Plus size={13} />
               Add product
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -605,13 +615,14 @@ export function InventoryClient({
             <p className="mt-1 text-xs text-slate-400">
               Add your first product to start tracking stock and fulfilling orders.
             </p>
-            <button
+            <Button
+              size="sm"
               onClick={() => setAddProduct(true)}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-green-900 px-4 py-2 text-xs font-medium text-white hover:bg-green-800 transition-colors"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-md text-xs font-medium transition-colors"
             >
               <Plus size={13} />
               Add your first product
-            </button>
+            </Button>
           </div>
         ) : (
           /* ── Inventory table ──────────────────────────────────────────────── */
@@ -638,27 +649,33 @@ export function InventoryClient({
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex items-center justify-end gap-1">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
                             title="Add variant"
                             onClick={() => setAddVariantFor(product)}
-                            className="p-1 rounded text-slate-400 hover:text-green-800 hover:bg-green-50 transition-colors"
+                            className="rounded text-slate-400 hover:text-green-800 hover:bg-green-50 transition-colors"
                           >
                             <Plus size={13} />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
                             title="Edit product"
                             onClick={() => guarded(product.name, () => setEditingProduct(product))}
-                            className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                            className="rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                           >
                             <Pencil size={13} />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
                             title="Archive product"
                             onClick={() => guarded(product.name, () => setDeletingProduct(product))}
-                            className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            className="rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                           >
                             <Trash2 size={13} />
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -677,27 +694,33 @@ export function InventoryClient({
                         </td>
                         <td className="px-4 py-2.5">
                           <div className="flex items-center justify-end gap-1">
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
                               title="Adjust stock"
                               onClick={() => setAdjustingVariant(variant)}
-                              className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                              className="rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                             >
                               <SlidersHorizontal size={13} />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
                               title="Edit variant"
                               onClick={() => guarded(variant.name, () => setEditingVariant({ variant, productId: product.id }))}
-                              className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                              className="rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                             >
                               <Pencil size={13} />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
                               title="Archive variant"
                               onClick={() => guarded(variant.name, () => setDeletingVariant(variant))}
-                              className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              className="rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                             >
                               <Trash2 size={13} />
-                            </button>
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -706,7 +729,7 @@ export function InventoryClient({
                     {product.variants.length === 0 && (
                       <tr key={`empty-${product.id}`}>
                         <td colSpan={6} className="pl-8 px-4 py-2.5 text-xs text-slate-400 italic border-b border-slate-100">
-                          No variants — <button onClick={() => setAddVariantFor(product)} className="underline hover:text-slate-600">add one</button>
+                          No variants — <Button variant="link" onClick={() => setAddVariantFor(product)} className="h-auto p-0 text-xs text-slate-400 underline hover:text-slate-600">add one</Button>
                         </td>
                       </tr>
                     )}

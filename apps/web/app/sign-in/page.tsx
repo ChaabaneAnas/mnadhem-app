@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { signIn } from '../../auth';
 import { AuthError } from 'next-auth';
 import { redirect } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 export default async function SignInPage({
   searchParams,
@@ -81,12 +82,12 @@ export default async function SignInPage({
               />
             </div>
 
-            <button
+            <Button
               type="submit"
-              className="w-full rounded-md bg-green-900 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-900 focus:ring-offset-2 transition-colors"
+              className="w-full rounded-md text-sm font-medium transition-colors"
             >
               Sign in
-            </button>
+            </Button>
           </form>
         </div>
 

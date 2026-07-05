@@ -3,6 +3,7 @@ import { auth, signOut } from '@/auth';
 import { LogOut } from 'lucide-react';
 import Image from 'next/image';
 import { SidebarNav } from './_components/sidebar-nav';
+import { Button } from '@/components/ui/button';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -39,13 +40,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
               await signOut({ redirectTo: '/sign-in' });
             }}
           >
-            <button
+            <Button
               type="submit"
-              className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm text-slate-500 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+              variant="ghost"
+              className="h-auto flex items-center justify-start gap-3 w-full px-3 py-2 rounded-md text-sm text-slate-500 hover:text-slate-100 hover:bg-slate-800 transition-colors"
             >
               <LogOut size={16} strokeWidth={1.75} />
               Sign out
-            </button>
+            </Button>
           </form>
         </div>
       </aside>
