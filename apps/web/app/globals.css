@@ -22,4 +22,19 @@
   --border: oklch(0.929 0.013 255.508);       /* slate-200 */
   --input: oklch(0.929 0.013 255.508);
   --ring: oklch(0.208 0.042 264.695);
+
+  /* Data-visualization palette — greens (Trust Anchor) to slate */
+  --chart-1: oklch(0.266 0.065 152.934);      /* green-900 */
+  --chart-2: oklch(0.393 0.095 152.535);      /* green-800 */
+  --chart-3: oklch(0.527 0.120 150.069);      /* green-700 */
+  --chart-4: oklch(0.723 0.150 149.579);      /* green-500 */
+  --chart-5: oklch(0.554 0.023 264.364);      /* slate-500 */
+}
+
+@theme inline {
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 }

@@ -9,8 +9,8 @@ export default async function OnboardingPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const [session, { error }] = await Promise.all([auth(), searchParams]);
-  if (!session) redirect('/sign-in');
-  if (session.user.activeTenantId) redirect('/inventory');
+  // if (!session) redirect('/sign-in');
+  // if (session.user.activeTenantId) redirect('/inventory');
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4">

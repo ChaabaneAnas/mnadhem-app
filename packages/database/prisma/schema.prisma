@@ -95,10 +95,11 @@ model Tenant {
   aramexApiKey   String?
   jexportApiKey  String?
 
-  members       TenantMember[]
-  products      Product[]
-  orders        Order[]
-  webhookEvents WebhookEvent[]
+  members         TenantMember[]
+  products        Product[]
+  orders          Order[]
+  webhookEvents   WebhookEvent[]
+  metricSnapshots MetricSnapshot[]
 }
 
 /// Junction table granting a User access to a Tenant with a specific Role.
@@ -211,6 +212,8 @@ model Order {
 
   items    OrderItem[]
   shipment Shipment?
+
+  @@index([tenantId, createdAt])
 }
 
 /// Line item linking an Order to a specific Variant at a locked-in price.
@@ -278,4 +281,32 @@ model WebhookEvent {
   /// JSON snapshot of the inventory mutation applied, e.g.:
   /// { "variantId": "...", "physicalDelta": -1, "reservedDelta": -1 }
   stockDelta Json?
+}
+
+// ---------------------------------------------------------------------------
+// Analytics
+// ---------------------------------------------------------------------------
+
+/// Daily point-in-time capture of a tenant's operational metrics.
+/// Order time-series are derived live from Order.createdAt; this table
+/// records snapshot-only metrics (floating capital, low-stock count) so
+/// their history can be charted over time. One row per tenant per day.
+model MetricSnapshot {
+  id       String   @id @default(cuid())
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Calendar day this snapshot represents (no time component)
+  date DateTime @db.Date
+
+  /// Total COD value of orders in transit (PROCESSING) at capture time
+  floatingCapital Decimal @default(0) @db.Decimal(12, 2)
+  /// Count of variants at or below the low-stock threshold
+  lowStockCount   Int     @default(0)
+  /// Count of orders awaiting fulfillment (PENDING_FULFILLMENT)
+  ordersToPack    Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, date])
 }

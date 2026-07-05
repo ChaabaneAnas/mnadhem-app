@@ -47,7 +47,7 @@ export default async function SignUpPage({
       },
     });
 
-    await signIn('credentials', { email, password, redirectTo: '/inventory' });
+    await signIn('credentials', { email, password, redirectTo: '/dashboard' });
   }
 
   const errorMessages: Record<string, string> = {

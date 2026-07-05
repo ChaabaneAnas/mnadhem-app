@@ -16,7 +16,7 @@ export default async function SignInPage({
       await signIn('credentials', {
         email: formData.get('email'),
         password: formData.get('password'),
-        redirectTo: callbackUrl ?? '/inventory',
+        redirectTo: callbackUrl ?? '/dashboard',
       });
     } catch (err) {
       if (err instanceof AuthError) {

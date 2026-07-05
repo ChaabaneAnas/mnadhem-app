@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition,  } from 'react';
 import { Plus, X, Search, Trash2, AlertCircle } from 'lucide-react';
 import { createManualOrder, cancelOrder, type CreateOrderPayload } from './actions';
+import { formatTND } from '@/lib/format';
+import { ORDER_STATUS, type OrderStatus } from '@/lib/order-status';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-type OrderStatus = 'PENDING_FULFILLMENT' | 'PROCESSING' | 'DELIVERED' | 'RETURNED' | 'CANCELLED';
 
 interface ShipmentInfo {
   trackingNumber: string;
@@ -58,44 +58,12 @@ const WILAYAS = [
   'In Guezzam', 'Touggourt', 'Djanet', "El M'Ghair", 'El Meniaa',
 ];
 
-// ── Status config ─────────────────────────────────────────────────────────────
-
-const STATUS: Record<OrderStatus, { label: string; classes: string }> = {
-  PENDING_FULFILLMENT: {
-    label: 'En attente',
-    classes: 'bg-slate-100 text-slate-600 border-slate-200',
-  },
-  PROCESSING: {
-    label: 'En cours',
-    classes: 'bg-amber-50 text-amber-700 border-amber-200',
-  },
-  DELIVERED: {
-    label: 'Livré',
-    classes: 'bg-green-50 text-green-800 border-green-200',
-  },
-  RETURNED: {
-    label: 'Retourné',
-    classes: 'bg-red-50 text-red-700 border-red-200',
-  },
-  CANCELLED: {
-    label: 'Annulé',
-    classes: 'bg-slate-50 text-slate-400 border-slate-100',
-  },
-};
-
 // ── Shared styles ─────────────────────────────────────────────────────────────
 
 const INPUT =
   'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:opacity-50';
 const LABEL = 'block text-xs font-medium text-slate-600 mb-1';
 
-function formatDZD(n: string | number) {
-  return new Intl.NumberFormat('fr-DZ', {
-    style: 'currency',
-    currency: 'DZD',
-    maximumFractionDigits: 0,
-  }).format(Number(n));
-}
 
 function generateRef() {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -314,7 +282,7 @@ function CreateOrderSheet({
                         <p className="text-xs text-slate-500">{v.name}{v.sku && <span className="ml-1 font-mono text-slate-400">{v.sku}</span>}</p>
                       </div>
                       <div className="text-right shrink-0 ml-3">
-                        <p className="text-xs font-medium text-slate-700">{formatDZD(v.price)}</p>
+                        <p className="text-xs font-medium text-slate-700">{formatTND(v.price)}</p>
                         <p className={`text-xs ${v.stockAvailable > 0 ? 'text-green-700' : 'text-red-600'}`}>
                           {v.stockAvailable} ready
                         </p>
@@ -349,7 +317,7 @@ function CreateOrderSheet({
                           <p className="font-medium text-slate-800">{item.productName}</p>
                           <p className="text-slate-500">{item.variantName}</p>
                         </td>
-                        <td className="px-3 py-2 text-right text-slate-700 tabular-nums">{formatDZD(item.price)}</td>
+                        <td className="px-3 py-2 text-right text-slate-700 tabular-nums">{formatTND(item.price)}</td>
                         <td className="px-3 py-2 text-right">
                           <input
                             type="number"
@@ -360,7 +328,7 @@ function CreateOrderSheet({
                           />
                         </td>
                         <td className="px-3 py-2 text-right font-medium text-slate-800 tabular-nums">
-                          {formatDZD(item.price * item.quantity)}
+                          {formatTND(item.price * item.quantity)}
                         </td>
                         <td className="px-3 py-2">
                           <button type="button" onClick={() => removeItem(item.variantId)} className="text-slate-300 hover:text-red-500 transition-colors">
@@ -391,7 +359,7 @@ function CreateOrderSheet({
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200">
                   <span className="text-xs font-medium text-slate-600">Total COD amount</span>
-                  <span className="text-base font-semibold text-slate-900 tabular-nums">{formatDZD(codTotal)}</span>
+                  <span className="text-base font-semibold text-slate-900 tabular-nums">{formatTND(codTotal)}</span>
                 </div>
                 <p className="text-xs text-slate-400">
                   This amount will be collected from the customer upon delivery.
@@ -490,13 +458,13 @@ export function OrdersClient({
               </thead>
               <tbody>
                 {orders.map((order) => {
-                  const cfg = STATUS[order.status] ?? STATUS.PENDING_FULFILLMENT;
+                  const cfg = ORDER_STATUS[order.status] ?? ORDER_STATUS.PENDING_FULFILLMENT;
                   return (
                     <tr key={order.id} className="border-b border-slate-100 hover:bg-slate-50/50">
                       <td className="px-4 py-3 font-mono text-xs text-slate-700">{order.reference}</td>
                       <td className="px-4 py-3 text-sm text-slate-700">{order.customerName}</td>
                       <td className="px-4 py-3 text-sm text-slate-500">{order.wilaya}</td>
-                      <td className="px-4 py-3 text-sm text-slate-700 tabular-nums">{formatDZD(order.codAmount)}</td>
+                      <td className="px-4 py-3 text-sm text-slate-700 tabular-nums">{formatTND(order.codAmount)}</td>
                       <td className="px-4 py-3 text-xs text-slate-400">{order.shipment?.courier ?? '—'}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${cfg.classes}`}>

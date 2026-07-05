@@ -64,7 +64,7 @@ export async function deleteVariant(id: string) {
 
 export async function adjustStock(id: string, formData: FormData) {
   const physicalDelta = Number(formData.get('physicalDelta'));
-  await apiRequest(`/variants/${id}/adjust`, {
+  await apiRequest(`/variants/${id}/stock`, {
     method: 'PATCH',
     body: JSON.stringify({ physicalDelta }),
   });
