@@ -24,8 +24,8 @@ export function SidebarNav() {
             href={href}
             className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
               active
-                ? 'bg-slate-800 text-slate-100'
-                : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                : 'text-sidebar-foreground/60 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent'
             }`}
           >
             <Icon size={16} strokeWidth={1.75} />

@@ -13,12 +13,12 @@ export default async function OnboardingPage({
   // if (session.user.activeTenantId) redirect('/inventory');
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
       <OnboardingWizard initialError={error} />
 
-      <p className="mt-8 text-center text-xs text-slate-400">
+      <p className="mt-8 text-center text-xs text-muted-foreground">
         Wrong account?{' '}
-        <Link href="/api/auth/signout" className="text-slate-600 hover:underline">
+        <Link href="/api/auth/signout" className="text-muted-foreground hover:underline">
           Sign out
         </Link>
       </p>

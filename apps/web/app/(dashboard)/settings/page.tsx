@@ -37,37 +37,35 @@ export default function SettingsPage() {
   return (
     <div className="p-8 max-w-lg">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-slate-900">Settings</h1>
-        <p className="mt-0.5 text-sm text-slate-500">Store configuration and courier keys</p>
+        <h1 className="text-xl font-semibold text-foreground">Settings</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">Store configuration and courier keys</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Store details */}
-        <div className="rounded-lg border border-slate-200 bg-white p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-slate-700">Store details</h2>
+        <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Store details</h2>
 
           <div className="space-y-1.5">
-            <Label htmlFor="name" className="text-slate-700">Store name</Label>
-            <Input id="name" name="name" placeholder="My Store"
-              className="border-slate-300 focus-visible:ring-slate-500 text-sm" />
+            <Label htmlFor="name">Store name</Label>
+            <Input id="name" name="name" placeholder="My Store" className="text-sm" />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="slug" className="text-slate-700">Slug</Label>
-            <Input id="slug" name="slug" placeholder="my-store"
-              className="border-slate-300 focus-visible:ring-slate-500 text-sm font-mono" />
-            <p className="text-xs text-slate-400">Lowercase letters, numbers, and hyphens only.</p>
+            <Label htmlFor="slug">Slug</Label>
+            <Input id="slug" name="slug" placeholder="my-store" className="text-sm font-mono" />
+            <p className="text-xs text-muted-foreground">Lowercase letters, numbers, and hyphens only.</p>
           </div>
         </div>
 
         {/* Courier API keys */}
-        <div className="rounded-lg border border-slate-200 bg-white p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-slate-700">Courier API keys</h2>
-          <p className="text-xs text-slate-400">
+        <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-foreground">Courier API keys</h2>
+          <p className="text-xs text-muted-foreground">
             These keys are used to validate inbound webhooks from each courier.
           </p>
 
-          <Separator className="bg-slate-100" />
+          <Separator />
 
           {[
             { name: 'yalidineApiKey', label: 'Yalidine', placeholder: 'yal_...' },
@@ -75,9 +73,8 @@ export default function SettingsPage() {
             { name: 'jexportApiKey', label: 'Jexport', placeholder: 'jxp_...' },
           ].map(({ name, label, placeholder }) => (
             <div key={name} className="space-y-1.5">
-              <Label htmlFor={name} className="text-slate-700">{label}</Label>
-              <Input id={name} name={name} type="password" placeholder={placeholder}
-                className="border-slate-300 focus-visible:ring-slate-500 text-sm font-mono" />
+              <Label htmlFor={name}>{label}</Label>
+              <Input id={name} name={name} type="password" placeholder={placeholder} className="text-sm font-mono" />
             </div>
           ))}
         </div>
@@ -89,7 +86,7 @@ export default function SettingsPage() {
           >
             Save changes
           </Button>
-          {saved && <span className="text-xs text-green-700">Saved successfully.</span>}
+          {saved && <span className="text-xs text-green-700 dark:text-green-400">Saved successfully.</span>}
         </div>
       </form>
     </div>

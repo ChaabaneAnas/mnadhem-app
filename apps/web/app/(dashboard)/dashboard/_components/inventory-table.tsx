@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface InventoryRow {
   id: string;
@@ -46,12 +47,12 @@ export function InventoryTable({ variants }: { variants: InventoryRow[] }) {
   const rows = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
-        <h2 className="text-sm font-semibold text-slate-700">Inventory</h2>
+    <div className="rounded-lg border border-border bg-card">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border">
+        <h2 className="text-sm font-semibold text-foreground">Inventory</h2>
         <div className="relative w-48">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
             type="text"
             value={query}
             onChange={(e) => {
@@ -60,13 +61,13 @@ export function InventoryTable({ variants }: { variants: InventoryRow[] }) {
             }}
             placeholder="Find inventory…"
             aria-label="Search inventory"
-            className="w-full rounded-md border border-slate-200 bg-white pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+            className="pl-8 pr-3 text-xs"
           />
         </div>
       </div>
 
       {rows.length === 0 ? (
-        <p className="px-4 py-10 text-center text-xs text-slate-400">No variants found.</p>
+        <p className="px-4 py-10 text-center text-xs text-muted-foreground">No variants found.</p>
       ) : (
         <Table>
           <TableHeader>
@@ -84,19 +85,19 @@ export function InventoryTable({ variants }: { variants: InventoryRow[] }) {
                 <TableRow
                   key={v.id}
                   onClick={() => router.push('/inventory')}
-                  className={`cursor-pointer ${low ? 'bg-red-50 hover:bg-red-100/60' : ''}`}
+                  className={`cursor-pointer ${low ? 'bg-red-50 dark:bg-red-950/30 hover:bg-red-100/60 dark:hover:bg-red-950/50' : ''}`}
                 >
-                  <TableCell className="font-mono text-xs text-slate-400">{v.sku ?? '—'}</TableCell>
-                  <TableCell className="text-slate-700">
-                    <span className="text-slate-500">{v.productName}</span>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{v.sku ?? '—'}</TableCell>
+                  <TableCell className="text-foreground">
+                    <span className="text-muted-foreground">{v.productName}</span>
                     {v.name && v.name !== v.productName ? ` · ${v.name}` : ''}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums text-slate-600">
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
                     {v.stockPhysical}
                   </TableCell>
                   <TableCell className="text-right">
                     <span
-                      className={`tabular-nums font-medium ${low ? 'text-red-600' : 'text-slate-700'}`}
+                      className={`tabular-nums font-medium ${low ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}
                     >
                       {v.stockAvailable}
                     </span>
@@ -109,7 +110,7 @@ export function InventoryTable({ variants }: { variants: InventoryRow[] }) {
       )}
 
       {filtered.length > PAGE_SIZE && (
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-100 text-xs text-slate-500">
+        <div className="flex items-center justify-between px-4 py-2.5 border-t border-border text-xs text-muted-foreground">
           <span>
             {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} of{' '}
             {filtered.length}
@@ -121,7 +122,7 @@ export function InventoryTable({ variants }: { variants: InventoryRow[] }) {
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={safePage === 0}
               aria-label="Previous page"
-              className="rounded-md hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent focus-visible:ring-2 focus-visible:ring-slate-400"
+              className="rounded-md hover:bg-secondary disabled:opacity-40 disabled:hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring"
             >
               <ChevronLeft size={16} />
             </Button>
@@ -134,7 +135,7 @@ export function InventoryTable({ variants }: { variants: InventoryRow[] }) {
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
               disabled={safePage >= pageCount - 1}
               aria-label="Next page"
-              className="rounded-md hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent focus-visible:ring-2 focus-visible:ring-slate-400"
+              className="rounded-md hover:bg-secondary disabled:opacity-40 disabled:hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring"
             >
               <ChevronRight size={16} />
             </Button>

@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import { prisma, Role } from '@mnadhem/database';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default async function SignUpPage({
   searchParams,
@@ -57,58 +59,48 @@ export default async function SignUpPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">منظّم</h1>
-          <p className="mt-1 text-sm text-slate-500">Create your Mnadhem account</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">منظّم</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Create your Mnadhem account</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg p-8">
-          <h2 className="text-base font-medium text-slate-900 mb-6">New account</h2>
+        <div className="bg-card border border-border rounded-lg p-8">
+          <h2 className="text-base font-medium text-foreground mb-6">New account</h2>
 
           {error && (
-            <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 px-4 py-3 text-sm text-red-700 dark:text-red-400">
               {errorMessages[error] ?? 'Something went wrong.'}
             </div>
           )}
 
           <form action={handleSignUp} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">Full name</label>
-              <input id="name" name="name" type="text" required
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                placeholder="Ahmed Benali" />
+              <Label htmlFor="name" className="mb-1">Full name</Label>
+              <Input id="name" name="name" type="text" required placeholder="Ahmed Benali" />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-              <input id="email" name="email" type="email" required autoComplete="email"
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                placeholder="you@example.com" />
+              <Label htmlFor="email" className="mb-1">Email</Label>
+              <Input id="email" name="email" type="email" required autoComplete="email" placeholder="you@example.com" />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-              <input id="password" name="password" type="password" required autoComplete="new-password"
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                placeholder="Min. 8 characters" />
+              <Label htmlFor="password" className="mb-1">Password</Label>
+              <Input id="password" name="password" type="password" required autoComplete="new-password" placeholder="Min. 8 characters" />
             </div>
 
-            <div className="pt-2 border-t border-slate-100">
-              <p className="text-xs text-slate-500 mb-3">Your first store</p>
+            <div className="pt-2 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-3">Your first store</p>
               <div className="space-y-3">
                 <div>
-                  <label htmlFor="storeName" className="block text-sm font-medium text-slate-700 mb-1">Store name</label>
-                  <input id="storeName" name="storeName" type="text" required
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                    placeholder="My Store" />
+                  <Label htmlFor="storeName" className="mb-1">Store name</Label>
+                  <Input id="storeName" name="storeName" type="text" required placeholder="My Store" />
                 </div>
                 <div>
-                  <label htmlFor="storeSlug" className="block text-sm font-medium text-slate-700 mb-1">Store slug</label>
-                  <input id="storeSlug" name="storeSlug" type="text" required
-                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-                    placeholder="my-store" />
+                  <Label htmlFor="storeSlug" className="mb-1">Store slug</Label>
+                  <Input id="storeSlug" name="storeSlug" type="text" required placeholder="my-store" />
                 </div>
               </div>
             </div>
@@ -120,9 +112,9 @@ export default async function SignUpPage({
           </form>
         </div>
 
-        <p className="mt-4 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs text-muted-foreground">
           Already have an account?{' '}
-          <Link href="/sign-in" className="text-slate-600 hover:underline">Sign in</Link>
+          <Link href="/sign-in" className="text-muted-foreground hover:underline">Sign in</Link>
         </p>
       </div>
     </div>

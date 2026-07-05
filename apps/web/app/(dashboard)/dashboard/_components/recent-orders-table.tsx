@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { formatTND } from '@/lib/format';
 import { ORDER_STATUS, type OrderStatus } from '@/lib/order-status';
 
@@ -48,12 +49,12 @@ export function RecentOrdersTable({ orders }: { orders: Order[] }) {
   const rows = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
-        <h2 className="text-sm font-semibold text-slate-700">Recent Orders</h2>
+    <div className="rounded-lg border border-border bg-card">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border">
+        <h2 className="text-sm font-semibold text-foreground">Recent Orders</h2>
         <div className="relative w-48">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
             type="text"
             value={query}
             onChange={(e) => {
@@ -62,13 +63,13 @@ export function RecentOrdersTable({ orders }: { orders: Order[] }) {
             }}
             placeholder="Search orders…"
             aria-label="Search orders"
-            className="w-full rounded-md border border-slate-200 bg-white pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+            className="pl-8 pr-3 text-xs"
           />
         </div>
       </div>
 
       {rows.length === 0 ? (
-        <p className="px-4 py-10 text-center text-xs text-slate-400">No orders found.</p>
+        <p className="px-4 py-10 text-center text-xs text-muted-foreground">No orders found.</p>
       ) : (
         <Table>
           <TableHeader>
@@ -89,10 +90,10 @@ export function RecentOrdersTable({ orders }: { orders: Order[] }) {
                   onClick={() => router.push('/orders')}
                   className="cursor-pointer"
                 >
-                  <TableCell className="font-mono text-xs text-slate-600">{o.reference}</TableCell>
-                  <TableCell className="text-slate-700">{o.customerName}</TableCell>
-                  <TableCell className="text-slate-500">{o.wilaya}</TableCell>
-                  <TableCell className="text-right tabular-nums text-slate-700">
+                  <TableCell className="font-mono text-xs text-muted-foreground">{o.reference}</TableCell>
+                  <TableCell className="text-foreground">{o.customerName}</TableCell>
+                  <TableCell className="text-muted-foreground">{o.wilaya}</TableCell>
+                  <TableCell className="text-right tabular-nums text-foreground">
                     {formatTND(o.codAmount)}
                   </TableCell>
                   <TableCell>
@@ -110,7 +111,7 @@ export function RecentOrdersTable({ orders }: { orders: Order[] }) {
       )}
 
       {filtered.length > PAGE_SIZE && (
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-100 text-xs text-slate-500">
+        <div className="flex items-center justify-between px-4 py-2.5 border-t border-border text-xs text-muted-foreground">
           <span>
             {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} of{' '}
             {filtered.length}
@@ -122,7 +123,7 @@ export function RecentOrdersTable({ orders }: { orders: Order[] }) {
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={safePage === 0}
               aria-label="Previous page"
-              className="rounded-md hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent focus-visible:ring-2 focus-visible:ring-slate-400"
+              className="rounded-md hover:bg-secondary disabled:opacity-40 disabled:hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring"
             >
               <ChevronLeft size={16} />
             </Button>
@@ -135,7 +136,7 @@ export function RecentOrdersTable({ orders }: { orders: Order[] }) {
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
               disabled={safePage >= pageCount - 1}
               aria-label="Next page"
-              className="rounded-md hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent focus-visible:ring-2 focus-visible:ring-slate-400"
+              className="rounded-md hover:bg-secondary disabled:opacity-40 disabled:hover:bg-transparent focus-visible:ring-2 focus-visible:ring-ring"
             >
               <ChevronRight size={16} />
             </Button>

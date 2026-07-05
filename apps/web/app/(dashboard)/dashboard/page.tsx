@@ -94,8 +94,8 @@ export default async function DashboardPage({
       {/* Header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
-          <p className="mt-0.5 text-sm text-slate-500">Operational overview</p>
+          <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">Operational overview</p>
         </div>
         <div className="flex items-center gap-2">
           <RangeSelect value={String(days)} />
@@ -112,23 +112,25 @@ export default async function DashboardPage({
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Orders Today */}
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
+        <div className="rounded-lg border border-border bg-card p-5">
           <div className="flex items-start justify-between">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Orders Today
             </span>
-            <div className="rounded-lg bg-slate-100 p-2">
-              <ShoppingBag size={16} className="text-slate-500" />
+            <div className="rounded-lg bg-secondary p-2">
+              <ShoppingBag size={16} className="text-muted-foreground" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-semibold tabular-nums text-slate-900">
+            <span className="text-2xl font-semibold tabular-nums text-foreground">
               {summary.ordersToday}
             </span>
             {summary.ordersYesterday > 0 && (
               <span
                 className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-medium ${
-                  trendUp ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+                  trendUp
+                    ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400'
+                    : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400'
                 }`}
               >
                 {trendUp ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
@@ -136,29 +138,29 @@ export default async function DashboardPage({
               </span>
             )}
           </div>
-          <p className="mt-1 text-xs text-slate-400">{summary.toPack} awaiting fulfillment</p>
+          <p className="mt-1 text-xs text-muted-foreground">{summary.toPack} awaiting fulfillment</p>
         </div>
 
         {/* Cash in Transit */}
         <Link
           href="/orders"
-          className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+          className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <div className="rounded-lg border border-slate-200 bg-white p-5 hover:border-slate-300 transition-colors">
+          <div className="rounded-lg border border-border bg-card p-5 hover:border-ring transition-colors">
             <div className="flex items-start justify-between">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Cash in Transit
               </span>
-              <div className="rounded-lg bg-green-50 p-2">
-                <Banknote size={16} className="text-green-800" />
+              <div className="rounded-lg bg-green-50 dark:bg-green-950/40 p-2">
+                <Banknote size={16} className="text-green-800 dark:text-green-400" />
               </div>
             </div>
             <div className="mt-3">
-              <span className="text-2xl font-semibold tabular-nums text-slate-900">
+              <span className="text-2xl font-semibold tabular-nums text-foreground">
                 {formatTND(summary.floatingCapital)}
               </span>
             </div>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-muted-foreground">
               {summary.inTransitCount} order{summary.inTransitCount !== 1 ? 's' : ''} in transit
             </p>
           </div>
@@ -167,41 +169,41 @@ export default async function DashboardPage({
         {/* Stock Critical */}
         <Link
           href="/inventory"
-          className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+          className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <div className="rounded-lg border border-slate-200 bg-white p-5 hover:border-slate-300 transition-colors">
+          <div className="rounded-lg border border-border bg-card p-5 hover:border-ring transition-colors">
             <div className="flex items-start justify-between">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Stock Critical
               </span>
-              <div className={`rounded-lg p-2 ${summary.lowStockCount > 0 ? 'bg-red-50' : 'bg-slate-100'}`}>
+              <div className={`rounded-lg p-2 ${summary.lowStockCount > 0 ? 'bg-red-50 dark:bg-red-950/40' : 'bg-secondary'}`}>
                 <AlertTriangle
                   size={16}
-                  className={summary.lowStockCount > 0 ? 'text-red-500' : 'text-slate-500'}
+                  className={summary.lowStockCount > 0 ? 'text-red-500 dark:text-red-400' : 'text-muted-foreground'}
                 />
               </div>
             </div>
             <div className="mt-3">
               <span
                 className={`text-2xl font-semibold tabular-nums ${
-                  summary.lowStockCount > 0 ? 'text-red-600' : 'text-slate-900'
+                  summary.lowStockCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-foreground'
                 }`}
               >
                 {summary.lowStockCount}
               </span>
-              <span className="ml-1 text-sm text-slate-400">SKUs</span>
+              <span className="ml-1 text-sm text-muted-foreground">SKUs</span>
             </div>
-            <p className="mt-1 text-xs text-slate-400">At or below 5 units</p>
+            <p className="mt-1 text-xs text-muted-foreground">At or below 5 units</p>
           </div>
         </Link>
       </div>
 
       {/* Weekly performance chart */}
-      <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
+      <div className="mt-4 rounded-lg border border-border bg-card p-5">
         <div className="mb-2 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-700">Order Volume</h2>
-            <p className="text-xs text-slate-400">Orders per day · last {days} days</p>
+            <h2 className="text-sm font-semibold text-foreground">Order Volume</h2>
+            <p className="text-xs text-muted-foreground">Orders per day · last {days} days</p>
           </div>
         </div>
         <OrdersChart data={timeseries} />
