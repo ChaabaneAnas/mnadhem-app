@@ -225,7 +225,7 @@ function CreateOrderSheet({
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="w-full max-w-lg bg-card border-border flex flex-col h-full p-0 gap-0"
+        className="w-full sm:max-w-lg bg-card border-border flex flex-col h-full p-0 gap-0"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">

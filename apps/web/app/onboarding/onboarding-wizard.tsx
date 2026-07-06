@@ -6,14 +6,22 @@ import { createManualStore, createStorefrontStore } from './actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type Track = 'MANUAL' | 'SHOPIFY' | null;
 
 const ERROR_MESSAGES: Record<string, string> = {
   missing_fields: 'Please fill in all fields.',
+  slug_taken: 'That store slug is already in use.',
 };
 
-function StoreFields() {
+function StoreFields({ defaultName, defaultSlug }: { defaultName?: string; defaultSlug?: string }) {
   return (
     <>
       <div className="space-y-1.5">
@@ -26,6 +34,7 @@ function StoreFields() {
           type="text"
           required
           autoFocus
+          defaultValue={defaultName}
           placeholder="My Store"
         />
       </div>
@@ -39,6 +48,7 @@ function StoreFields() {
           name="storeSlug"
           type="text"
           required
+          defaultValue={defaultSlug}
           placeholder="my-store"
         />
         <p className="text-xs text-muted-foreground">Lowercase letters, numbers, and hyphens only.</p>
@@ -107,9 +117,13 @@ function TrackSelector({ onSelect }: { onSelect: (t: Track) => void }) {
 function ManualSetupForm({
   onBack,
   initialError,
+  defaultName,
+  defaultSlug,
 }: {
   onBack: () => void;
   initialError?: string;
+  defaultName?: string;
+  defaultSlug?: string;
 }) {
   return (
     <div className="w-full max-w-sm">
@@ -138,7 +152,7 @@ function ManualSetupForm({
         )}
 
         <form action={createManualStore} className="space-y-4">
-          <StoreFields />
+          <StoreFields defaultName={defaultName} defaultSlug={defaultSlug} />
           <Button
             type="submit"
             className="w-full rounded-md text-sm font-medium transition-colors"
@@ -154,9 +168,13 @@ function ManualSetupForm({
 function StorefrontSetupForm({
   onBack,
   initialError,
+  defaultName,
+  defaultSlug,
 }: {
   onBack: () => void;
   initialError?: string;
+  defaultName?: string;
+  defaultSlug?: string;
 }) {
   return (
     <div className="w-full max-w-sm">
@@ -186,7 +204,20 @@ function StorefrontSetupForm({
           )}
 
           <form action={createStorefrontStore} className="space-y-4">
-            <StoreFields />
+            <StoreFields defaultName={defaultName} defaultSlug={defaultSlug} />
+
+            <div className="space-y-1.5">
+              <Label htmlFor="platform">Platform</Label>
+              <Select name="platform" defaultValue="SHOPIFY">
+                <SelectTrigger id="platform" className="w-full">
+                  <SelectValue placeholder="Select your platform" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SHOPIFY">Shopify</SelectItem>
+                  <SelectItem value="WOOCOMMERCE">WooCommerce</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Integration coming-soon card */}
             <div className="rounded-lg border border-border bg-muted p-4">
@@ -217,16 +248,43 @@ function StorefrontSetupForm({
   );
 }
 
-export function OnboardingWizard({ initialError }: { initialError?: string }) {
-  const [track, setTrack] = useState<Track>(null);
+export function OnboardingWizard({
+  initialError,
+  initialTrack,
+  defaultStoreName,
+  defaultStoreSlug,
+}: {
+  initialError?: string;
+  initialTrack?: 'MANUAL' | 'STOREFRONT';
+  defaultStoreName?: string;
+  defaultStoreSlug?: string;
+}) {
+  // After an error redirect, resume on the setup form the user was on.
+  const [track, setTrack] = useState<Track>(
+    initialTrack === 'MANUAL' ? 'MANUAL' : initialTrack === 'STOREFRONT' ? 'SHOPIFY' : null,
+  );
 
   if (track === null) {
     return <TrackSelector onSelect={setTrack} />;
   }
 
   if (track === 'MANUAL') {
-    return <ManualSetupForm onBack={() => setTrack(null)} initialError={initialError} />;
+    return (
+      <ManualSetupForm
+        onBack={() => setTrack(null)}
+        initialError={initialError}
+        defaultName={defaultStoreName}
+        defaultSlug={defaultStoreSlug}
+      />
+    );
   }
 
-  return <StorefrontSetupForm onBack={() => setTrack(null)} initialError={initialError} />;
+  return (
+    <StorefrontSetupForm
+      onBack={() => setTrack(null)}
+      initialError={initialError}
+      defaultName={defaultStoreName}
+      defaultSlug={defaultStoreSlug}
+    />
+  );
 }

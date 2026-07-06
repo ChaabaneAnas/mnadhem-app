@@ -38,6 +38,7 @@ interface CsvRow {
   name: string;
   sku: string;
   variantName: string;
+  variantSku: string;
   price: number;
   stockPhysical: number;
   errors: string[];
@@ -59,6 +60,7 @@ function parseCSV(text: string): CsvRow[] {
     const name = col('name') || col('product_name');
     const sku = col('sku') || col('product_sku');
     const variantName = col('variant_name') || col('variant');
+    const variantSku = col('variant_sku') || col('variantsku');
     const priceRaw = col('price');
     const stockRaw = col('stock_physical') || col('stock') || col('quantity');
     const price = parseFloat(priceRaw);
@@ -68,7 +70,7 @@ function parseCSV(text: string): CsvRow[] {
     if (!name) errors.push('Product name required');
     if (!priceRaw || isNaN(price) || price < 0) errors.push('Valid price required');
 
-    return { rowNum: idx + 2, name, sku, variantName, price: isNaN(price) ? 0 : price, stockPhysical, errors };
+    return { rowNum: idx + 2, name, sku, variantName, variantSku, price: isNaN(price) ? 0 : price, stockPhysical, errors };
   });
 }
 
@@ -216,6 +218,11 @@ function VariantModal({
           <div>
             <Label className="mb-1">SKU</Label>
             <Input name="sku" defaultValue={variant?.sku ?? ''} placeholder="TSH-001-BL-XL" />
+            {!isEdit && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Leave empty to generate from the product SKU.
+              </p>
+            )}
           </div>
           <div>
             <Label className="mb-1">Price (DZD) *</Label>
@@ -385,7 +392,7 @@ function SyncWarningModal({
 function BulkImportPanel({ onClose }: { onClose: () => void }) {
   const [rows, setRows] = useState<CsvRow[]>([]);
   const [pending, startTransition] = useTransition();
-  const [result, setResult] = useState<{ created: number; skipped: number } | null>(null);
+  const [result, setResult] = useState<{ createdProducts: number; createdVariants: number; skipped: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -413,6 +420,7 @@ function BulkImportPanel({ onClose }: { onClose: () => void }) {
             name: r.name,
             sku: r.sku || undefined,
             variantName: r.variantName || undefined,
+            variantSku: r.variantSku || undefined,
             price: r.price,
             stockPhysical: r.stockPhysical,
           })),
@@ -431,7 +439,7 @@ function BulkImportPanel({ onClose }: { onClose: () => void }) {
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="w-full max-w-lg bg-card border-border flex flex-col h-full p-0 gap-0 overflow-hidden"
+        className="w-full sm:max-w-lg bg-card border-border flex flex-col h-full p-0 gap-0 overflow-hidden"
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <SheetTitle className="text-sm font-semibold text-foreground">Bulk import products</SheetTitle>
@@ -445,11 +453,14 @@ function BulkImportPanel({ onClose }: { onClose: () => void }) {
           <div className="rounded-lg bg-muted border border-border p-4">
             <p className="text-xs font-medium text-foreground mb-2">Expected CSV format</p>
             <code className="block text-xs text-muted-foreground whitespace-pre-wrap font-mono bg-card border border-border rounded p-2">
-              {`name,sku,variant_name,price,stock_physical\nBlue Tshirt,TSH-001,Blue / M,1500,10\nBlue Tshirt,TSH-001,Blue / L,1500,5`}
+              {`name,sku,variant_name,variant_sku,price,stock_physical\nBlue Tshirt,TSH-001,Blue / M,TSH-001-BL-M,1500,10\nBlue Tshirt,TSH-001,Blue / L,,1500,5`}
             </code>
             <p className="mt-2 text-xs text-muted-foreground">
               Columns <span className="font-mono">name</span> and{' '}
               <span className="font-mono">price</span> are required. Others are optional.
+              Rows sharing the same <span className="font-mono">sku</span> are merged as
+              variants of one product. If <span className="font-mono">variant_sku</span> is
+              empty it&apos;s generated from the product SKU + variant name.
               Semicolons also accepted.
             </p>
           </div>
@@ -470,8 +481,9 @@ function BulkImportPanel({ onClose }: { onClose: () => void }) {
           {/* Success banner */}
           {result && (
             <div className="rounded-md bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-900/60 px-4 py-3 text-sm text-green-800 dark:text-green-400">
-              Import complete — <strong>{result.created}</strong> products created,{' '}
-              <strong>{result.skipped}</strong> skipped (existing SKUs).
+              Import complete — <strong>{result.createdProducts}</strong> product{result.createdProducts !== 1 ? 's' : ''} and{' '}
+              <strong>{result.createdVariants}</strong> variant{result.createdVariants !== 1 ? 's' : ''} created,{' '}
+              <strong>{result.skipped}</strong> row{result.skipped !== 1 ? 's' : ''} skipped (already exist).
             </div>
           )}
 
@@ -490,7 +502,7 @@ function BulkImportPanel({ onClose }: { onClose: () => void }) {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-muted">
-                      {['#', 'Name', 'SKU', 'Price', 'In Warehouse', ''].map((h) => (
+                      {['#', 'Name', 'SKU', 'Variant SKU', 'Price', 'In Warehouse', ''].map((h) => (
                         <th key={h} className="px-3 py-2 text-left font-medium text-muted-foreground">{h}</th>
                       ))}
                     </tr>
@@ -504,6 +516,7 @@ function BulkImportPanel({ onClose }: { onClose: () => void }) {
                         <td className="px-3 py-2 text-muted-foreground">{row.rowNum}</td>
                         <td className="px-3 py-2 text-foreground">{row.name || <span className="text-red-500">—</span>}</td>
                         <td className="px-3 py-2 text-muted-foreground font-mono">{row.sku || '—'}</td>
+                        <td className="px-3 py-2 text-muted-foreground font-mono">{row.variantSku || '—'}</td>
                         <td className="px-3 py-2 text-foreground">{row.price > 0 ? row.price : <span className="text-red-500">—</span>}</td>
                         <td className="px-3 py-2 text-foreground">{row.stockPhysical}</td>
                         <td className="px-3 py-2">

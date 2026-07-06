@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { slugifySku } from '../common/utils/sku.util';
 import type { BulkCreateDto } from './dto/bulk-create.dto';
 import type { CreateProductDto } from './dto/create-product.dto';
 import type { UpdateProductDto } from './dto/update-product.dto';
@@ -10,8 +11,8 @@ export class ProductsService {
 
   async create(dto: CreateProductDto, tenantId: string) {
     if (dto.sku) {
-      const conflict = await this.prisma.product.findUnique({
-        where: { tenantId_sku: { tenantId, sku: dto.sku } },
+      const conflict = await this.prisma.product.findFirst({
+        where: { tenantId, sku: dto.sku, deletedAt: null },
       });
       if (conflict) throw new ConflictException(`SKU "${dto.sku}" already exists`);
     }
@@ -50,39 +51,68 @@ export class ProductsService {
   }
 
   async update(id: string, dto: UpdateProductDto, tenantId: string) {
-    await this.findOne(id, tenantId);
+    const product = await this.findOne(id, tenantId);
+    if (dto.sku && dto.sku !== product.sku) {
+      const conflict = await this.prisma.product.findFirst({
+        where: { tenantId, sku: dto.sku, deletedAt: null, id: { not: id } },
+      });
+      if (conflict) throw new ConflictException(`SKU "${dto.sku}" already exists`);
+    }
     return this.prisma.product.update({ where: { id }, data: dto });
   }
 
   /**
-   * Bulk-creates products and their default variants from CSV-parsed rows.
-   * Each row maps to one Product + one Variant. Rows with an existing SKU are
-   * skipped (idempotent) rather than throwing, so a re-upload doesn't fail.
-   * Returns a summary of how many rows were created vs skipped.
+   * Bulk-creates products and variants from CSV-parsed rows.
+   * Rows are merged by product SKU (or by name when no SKU): the first row
+   * creates the Product, subsequent rows with the same SKU attach as extra
+   * Variants — including onto products that already existed before the import.
+   * A row is skipped only when a matching active variant (same name or same
+   * variant SKU) already exists on the product, so re-uploads stay idempotent.
+   * Variant SKU comes from the row's variantSku, else is derived from the
+   * product SKU + variant name (e.g. "TSH-001" + "Red/M" → "TSH-001-RED-M").
    */
   async bulkCreate(dto: BulkCreateDto, tenantId: string) {
-    let created = 0;
+    let createdProducts = 0;
+    let createdVariants = 0;
     let skipped = 0;
 
     await this.prisma.$transaction(async (tx) => {
       for (const row of dto.rows) {
-        if (row.sku) {
-          const existing = await tx.product.findUnique({
-            where: { tenantId_sku: { tenantId, sku: row.sku } },
+        let product = row.sku
+          ? await tx.product.findFirst({
+              where: { tenantId, sku: row.sku, deletedAt: null },
+            })
+          : await tx.product.findFirst({
+              where: { tenantId, name: row.name, sku: null, deletedAt: null },
+            });
+
+        if (!product) {
+          product = await tx.product.create({
+            data: { name: row.name, sku: row.sku, tenantId },
           });
-          if (existing) {
-            skipped++;
-            continue;
-          }
+          createdProducts++;
         }
 
-        const product = await tx.product.create({
-          data: { name: row.name, sku: row.sku, tenantId },
+        const variantName = row.variantName ?? 'Default';
+        const variantSku =
+          row.variantSku || (row.sku ? `${row.sku}-${slugifySku(variantName)}` : undefined);
+
+        const existing = await tx.variant.findFirst({
+          where: {
+            productId: product.id,
+            deletedAt: null,
+            OR: [{ name: variantName }, ...(variantSku ? [{ sku: variantSku }] : [])],
+          },
         });
+        if (existing) {
+          skipped++;
+          continue;
+        }
 
         await tx.variant.create({
           data: {
-            name: row.variantName ?? 'Default',
+            name: variantName,
+            sku: variantSku,
             price: row.price,
             stockPhysical: row.stockPhysical,
             stockAvailable: row.stockPhysical,
@@ -91,11 +121,11 @@ export class ProductsService {
           },
         });
 
-        created++;
+        createdVariants++;
       }
     });
 
-    return { created, skipped, total: dto.rows.length };
+    return { createdProducts, createdVariants, skipped, total: dto.rows.length };
   }
 
   /**

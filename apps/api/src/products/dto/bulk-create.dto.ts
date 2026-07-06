@@ -5,6 +5,7 @@ export class BulkCreateRowDto {
   @IsString() @MinLength(1) name!: string;
   @IsOptional() @IsString() sku?: string;
   @IsOptional() @IsString() variantName?: string;
+  @IsOptional() @IsString() variantSku?: string;
 
   @IsNumber() @Min(0) @Type(() => Number)
   price!: number;

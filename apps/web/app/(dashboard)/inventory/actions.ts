@@ -74,12 +74,21 @@ export async function adjustStock(id: string, formData: FormData) {
 // ── Bulk create ───────────────────────────────────────────────────────────────
 
 export async function bulkCreateProducts(
-  rows: { name: string; sku?: string; variantName?: string; price: number; stockPhysical: number }[],
+  rows: {
+    name: string;
+    sku?: string;
+    variantName?: string;
+    variantSku?: string;
+    price: number;
+    stockPhysical: number;
+  }[],
 ) {
-  const result = await apiRequest<{ created: number; skipped: number; total: number }>(
-    '/products/bulk-create',
-    { method: 'POST', body: JSON.stringify({ rows }) },
-  );
+  const result = await apiRequest<{
+    createdProducts: number;
+    createdVariants: number;
+    skipped: number;
+    total: number;
+  }>('/products/bulk-create', { method: 'POST', body: JSON.stringify({ rows }) });
   revalidatePath('/inventory');
   return result;
 }

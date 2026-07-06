@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { signIn } from '@/auth';
 import bcrypt from 'bcryptjs';
-import { prisma, Role } from '@mnadhem/database';
+import { prisma } from '@mnadhem/database';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,13 +19,8 @@ export default async function SignUpPage({
     const name = (formData.get('name') as string)?.trim();
     const email = (formData.get('email') as string)?.toLowerCase().trim();
     const password = formData.get('password') as string;
-    const storeName = (formData.get('storeName') as string)?.trim();
-    const storeSlug = (formData.get('storeSlug') as string)
-      ?.toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9-]/g, '-');
 
-    if (!name || !email || !password || !storeName || !storeSlug) {
+    if (!name || !email || !password) {
       redirect('/sign-up?error=missing_fields');
     }
 
@@ -34,23 +29,10 @@ export default async function SignUpPage({
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-        memberships: {
-          create: {
-            role: Role.OWNER,
-            tenant: {
-              create: { name: storeName, slug: storeSlug },
-            },
-          },
-        },
-      },
-    });
+    await prisma.user.create({ data: { name, email, passwordHash } });
 
-    await signIn('credentials', { email, password, redirectTo: '/dashboard' });
+    // The store itself is created during onboarding, once we know the customer type.
+    await signIn('credentials', { email, password, redirectTo: '/onboarding' });
   }
 
   const errorMessages: Record<string, string> = {
@@ -89,20 +71,6 @@ export default async function SignUpPage({
             <div>
               <Label htmlFor="password" className="mb-1">Password</Label>
               <Input id="password" name="password" type="password" required autoComplete="new-password" placeholder="Min. 8 characters" />
-            </div>
-
-            <div className="pt-2 border-t border-border">
-              <p className="text-xs text-muted-foreground mb-3">Your first store</p>
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="storeName" className="mb-1">Store name</Label>
-                  <Input id="storeName" name="storeName" type="text" required placeholder="My Store" />
-                </div>
-                <div>
-                  <Label htmlFor="storeSlug" className="mb-1">Store slug</Label>
-                  <Input id="storeSlug" name="storeSlug" type="text" required placeholder="my-store" />
-                </div>
-              </div>
             </div>
 
             <Button type="submit"

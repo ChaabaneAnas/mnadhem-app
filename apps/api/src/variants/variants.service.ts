@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { slugifySku } from '../common/utils/sku.util';
 import type { CreateVariantDto } from './dto/create-variant.dto';
 import type { UpdateVariantDto } from './dto/update-variant.dto';
 import type { StockAdjustmentDto } from './dto/stock-adjustment.dto';
@@ -19,17 +20,21 @@ export class VariantsService {
     });
     if (!product) throw new NotFoundException('Product not found');
 
-    if (dto.sku) {
-      const conflict = await this.prisma.variant.findUnique({
-        where: { productId_sku: { productId, sku: dto.sku } },
+    // No SKU given? Derive one from the product SKU for consistency with bulk import.
+    const sku = dto.sku || (product.sku ? `${product.sku}-${slugifySku(dto.name)}` : undefined);
+
+    if (sku) {
+      const conflict = await this.prisma.variant.findFirst({
+        where: { productId, sku, deletedAt: null },
       });
-      if (conflict) throw new ConflictException(`SKU "${dto.sku}" already exists on this product`);
+      if (conflict) throw new ConflictException(`SKU "${sku}" already exists on this product`);
     }
 
     const { stockPhysical = 0, ...rest } = dto;
     return this.prisma.variant.create({
       data: {
         ...rest,
+        sku,
         productId,
         stockPhysical,
         stockAvailable: stockPhysical,
@@ -54,7 +59,13 @@ export class VariantsService {
   }
 
   async update(id: string, dto: UpdateVariantDto, tenantId: string) {
-    await this.findOne(id, tenantId);
+    const variant = await this.findOne(id, tenantId);
+    if (dto.sku && dto.sku !== variant.sku) {
+      const conflict = await this.prisma.variant.findFirst({
+        where: { productId: variant.productId, sku: dto.sku, deletedAt: null, id: { not: id } },
+      });
+      if (conflict) throw new ConflictException(`SKU "${dto.sku}" already exists on this product`);
+    }
     return this.prisma.variant.update({ where: { id }, data: dto });
   }
 

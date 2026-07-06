@@ -138,7 +138,7 @@ model Product {
 
   variants Variant[]
 
-  @@unique([tenantId, sku])
+  @@index([tenantId, sku])
 }
 
 /// A specific Color/Size (or any attribute) combination of a Product.
@@ -172,7 +172,7 @@ model Variant {
 
   orderItems OrderItem[]
 
-  @@unique([productId, sku])
+  @@index([productId, sku])
 }
 
 // ---------------------------------------------------------------------------
