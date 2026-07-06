@@ -3,6 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Layers, ShoppingCart, Settings } from 'lucide-react';
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -15,24 +20,24 @@ export function SidebarNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex-1 px-3 py-4 space-y-0.5">
+    <SidebarMenu>
       {navItems.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(href + '/');
         return (
-          <Link
-            key={href}
-            href={href}
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-              active
-                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                : 'text-sidebar-foreground/60 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent'
-            }`}
-          >
-            <Icon size={16} strokeWidth={1.75} />
-            {label}
-          </Link>
+          <SidebarMenuItem key={href}>
+            <SidebarMenuButton
+              asChild
+              isActive={active}
+              className="hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
+            >
+              <Link href={href}>
+                <Icon size={16} strokeWidth={1.75} />
+                <span>{label}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         );
       })}
-    </nav>
+    </SidebarMenu>
   );
 }

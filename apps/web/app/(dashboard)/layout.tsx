@@ -4,6 +4,15 @@ import { LogOut } from 'lucide-react';
 import Image from 'next/image';
 import { SidebarNav } from './_components/sidebar-nav';
 import { Button } from '@/components/ui/button';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -15,11 +24,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ?? 'My Store';
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar */}
-      <aside className="flex flex-col w-56 shrink-0 bg-sidebar text-sidebar-foreground">
+    <SidebarProvider>
+      <Sidebar>
         {/* Brand + store name */}
-        <div className="px-5 py-5 border-b border-sidebar-border">
+        <SidebarHeader className="px-5 py-5 border-b border-sidebar-border">
           <div className="flex gap-3">
             <Image src="/logo.svg" alt="Mnadhem Logo" width={50} height={80} className="rounded-full" priority />
             <span className="text-lg font-semibold tracking-tight">Mnadhem</span>
@@ -27,13 +35,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <p className="mt-0.5 text-xs text-sidebar-foreground/60 truncate" title={tenantName}>
             {tenantName}
           </p>
-        </div>
+        </SidebarHeader>
 
         {/* Navigation */}
-        <SidebarNav />
+        <SidebarContent className="px-3 py-4">
+          <SidebarNav />
+        </SidebarContent>
 
         {/* Sign out */}
-        <div className="px-3 py-4 border-t border-sidebar-border">
+        <SidebarFooter className="px-3 py-4 border-t border-sidebar-border">
           <form
             action={async () => {
               'use server';
@@ -49,13 +59,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
               Sign out
             </Button>
           </form>
-        </div>
-      </aside>
+        </SidebarFooter>
+      </Sidebar>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
-    </div>
+      <SidebarInset>
+        <div className="flex items-center h-12 px-4 border-b border-border shrink-0">
+          <SidebarTrigger className="hover:bg-muted hover:text-foreground" />
+        </div>
+        <div className="flex-1 overflow-auto">
+          {children}
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
