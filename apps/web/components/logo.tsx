@@ -1,0 +1,32 @@
+/**
+ * Mnadhem brand logomark.
+ *
+ * Two-color mark: the first path is the fixed brand green (green-900), the second
+ * path uses `currentColor` so it adapts to the surrounding text color — slate-900 on
+ * light surfaces, or a light tone (e.g. `text-slate-200`) on the dark sidebar rail.
+ *
+ * Size is driven entirely by `className` (e.g. `h-9 w-9`); the green can be overridden
+ * per placement via the `--logo-accent` CSS variable.
+ */
+export function Logo({ className, ...props }: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 169 160"
+      role="img"
+      aria-label="Mnadhem"
+      className={className}
+      {...props}
+    >
+      <g transform="translate(0,160) scale(0.1,-0.1)">
+        <path
+          d="M623 1197 c-101 -62 -183 -114 -183 -117 0 -3 83 -56 184 -118 l184 -113 191 117 191 117 -73 45 c-213 132 -296 182 -304 182 -4 -1 -90 -51 -190 -113z m312 -38 c63 -39 115 -74 115 -79 0 -9 -222 -150 -235 -150 -17 0 -245 146 -242 155 4 12 217 143 234 144 7 1 65 -31 128 -70z"
+          fill="var(--logo-accent, #14532D)"
+        />
+        <path
+          d="M400 805 c0 -63 -2 -115 -4 -115 -3 0 -31 16 -63 35 -32 19 -61 35 -66 35 -4 0 -6 -73 -5 -161 l3 -162 265 -163 c146 -90 270 -163 276 -163 6 -1 90 47 185 105 96 59 218 133 272 166 l97 59 0 160 c0 87 -2 159 -5 159 -3 0 -17 -7 -30 -16 -24 -16 -25 -20 -25 -140 l0 -123 -68 -41 c-37 -23 -143 -88 -236 -146 -93 -57 -174 -104 -181 -104 -7 0 -98 52 -201 116 -104 64 -209 129 -234 144 l-45 26 -3 82 c-2 45 0 82 3 82 3 0 52 -29 108 -64 56 -35 162 -100 235 -145 l132 -81 205 128 205 127 0 159 c0 135 -2 157 -15 152 -8 -3 -98 -57 -200 -121 -102 -63 -187 -115 -190 -115 -2 0 -92 54 -199 120 -108 66 -200 120 -206 120 -6 0 -10 -44 -10 -115z m246 -105 l163 -100 163 100 c89 55 166 100 170 100 4 0 8 -37 8 -82 l0 -83 -163 -100 c-89 -55 -167 -99 -173 -99 -6 1 -86 47 -177 104 l-167 102 0 79 c0 43 3 79 6 79 4 0 80 -45 170 -100z"
+          fill="currentColor"
+        />
+      </g>
+    </svg>
+  );
+}
