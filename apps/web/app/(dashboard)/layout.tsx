@@ -33,7 +33,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                       <Logo className="h-16 w-16 shrink-0 text-slate-200" />
                       <div className="flex flex-col items-start justify-end">
                           <h1 className="text-2xl font-semibold tracking-tight">
-                              Mnadhem
+                              <span className="text-[#14532D]">Mna</span>dhem
                           </h1>
                           <span
                               className="mt-0.5 text-xs text-sidebar-foreground/60 truncate"

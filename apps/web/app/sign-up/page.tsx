@@ -41,50 +41,89 @@ export default async function SignUpPage({
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">منظّم</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Create your Mnadhem account</p>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+          <div className="w-full max-w-sm">
+              <div className="mb-8 text-center">
+                  <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                      <span className="text-primary">M</span>nadhem
+                  </h1>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                      Create your Mnadhem account
+                  </p>
+              </div>
 
-        <div className="bg-card border border-border rounded-lg p-8">
-          <h2 className="text-base font-medium text-foreground mb-6">New account</h2>
+              <div className="bg-card border border-border rounded-lg p-8">
+                  <h2 className="text-base font-medium text-foreground mb-6">
+                      New account
+                  </h2>
 
-          {error && (
-            <div className="mb-4 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-              {errorMessages[error] ?? 'Something went wrong.'}
-            </div>
-          )}
+                  {error && (
+                      <div className="mb-4 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                          {errorMessages[error] ?? 'Something went wrong.'}
+                      </div>
+                  )}
 
-          <form action={handleSignUp} className="space-y-4">
-            <div>
-              <Label htmlFor="name" className="mb-1">Full name</Label>
-              <Input id="name" name="name" type="text" required placeholder="Ahmed Benali" />
-            </div>
+                  <form action={handleSignUp} className="space-y-4">
+                      <div>
+                          <Label htmlFor="name" className="mb-1">
+                              Full name
+                          </Label>
+                          <Input
+                              id="name"
+                              name="name"
+                              type="text"
+                              required
+                              placeholder="Ahmed Benali"
+                          />
+                      </div>
 
-            <div>
-              <Label htmlFor="email" className="mb-1">Email</Label>
-              <Input id="email" name="email" type="email" required autoComplete="email" placeholder="you@example.com" />
-            </div>
+                      <div>
+                          <Label htmlFor="email" className="mb-1">
+                              Email
+                          </Label>
+                          <Input
+                              id="email"
+                              name="email"
+                              type="email"
+                              required
+                              autoComplete="email"
+                              placeholder="you@example.com"
+                          />
+                      </div>
 
-            <div>
-              <Label htmlFor="password" className="mb-1">Password</Label>
-              <Input id="password" name="password" type="password" required autoComplete="new-password" placeholder="Min. 8 characters" />
-            </div>
+                      <div>
+                          <Label htmlFor="password" className="mb-1">
+                              Password
+                          </Label>
+                          <Input
+                              id="password"
+                              name="password"
+                              type="password"
+                              required
+                              autoComplete="new-password"
+                              placeholder="Min. 8 characters"
+                          />
+                      </div>
 
-            <Button type="submit"
-              className="w-full rounded-md text-sm font-medium transition-colors">
-              Create account
-            </Button>
-          </form>
-        </div>
+                      <Button
+                          type="submit"
+                          className="w-full rounded-md text-sm font-medium transition-colors"
+                      >
+                          Create account
+                      </Button>
+                  </form>
+              </div>
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          Already have an account?{' '}
-          <Link href="/sign-in" className="text-muted-foreground hover:underline">Sign in</Link>
-        </p>
+              <p className="mt-4 text-center text-xs text-muted-foreground">
+                  Already have an account?{' '}
+                  <Link
+                      href="/sign-in"
+                      className="text-muted-foreground hover:underline"
+                  >
+                      Sign in
+                  </Link>
+              </p>
+          </div>
       </div>
-    </div>
   );
 }
