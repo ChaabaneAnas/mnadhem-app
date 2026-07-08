@@ -7,10 +7,15 @@ export const authConfig = {
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        const u = user as { activeTenantId?: string | null; activeTenantName?: string | null };
+        const u = user as {
+          activeTenantId?: string | null;
+          activeTenantName?: string | null;
+          locale?: string | null;
+        };
         token.userId = user.id;
         token.activeTenantId = u.activeTenantId ?? null;
         token.activeTenantName = u.activeTenantName ?? null;
+        token.locale = u.locale ?? null;
       }
       return token;
     },
@@ -18,6 +23,7 @@ export const authConfig = {
       session.user.id = token.userId as string;
       session.user.activeTenantId = token.activeTenantId as string | null;
       session.user.activeTenantName = token.activeTenantName as string | null;
+      session.user.locale = token.locale as string | null;
       return session;
     },
   },

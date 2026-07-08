@@ -33,6 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           name: user.name,
           email: user.email,
+          locale: user.locale,
           activeTenantId: firstMembership?.tenantId ?? null,
           activeTenantName: firstMembership?.tenant?.name ?? null,
         };
@@ -43,10 +44,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       // On sign-in: populate from the authorize() return value
       if (user) {
-        const u = user as { activeTenantId?: string | null; activeTenantName?: string | null };
+        const u = user as {
+          activeTenantId?: string | null;
+          activeTenantName?: string | null;
+          locale?: string | null;
+        };
         token.userId = user.id;
         token.activeTenantId = u.activeTenantId ?? null;
         token.activeTenantName = u.activeTenantName ?? null;
+        token.locale = u.locale ?? null;
       }
       // Self-healing: if the token has a user but no tenant, re-check the DB.
       // This fires once after onboarding creates the first tenant, then caches
@@ -68,6 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.id = token.userId as string;
       session.user.activeTenantId = token.activeTenantId as string | null;
       session.user.activeTenantName = token.activeTenantName as string | null;
+      session.user.locale = token.locale as string | null;
       return session;
     },
   },

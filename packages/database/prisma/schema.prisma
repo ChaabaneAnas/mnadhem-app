@@ -71,6 +71,9 @@ model User {
   email        String   @unique
   name         String?
   passwordHash String?
+  /// Preferred UI language (BCP-47 short code: "fr", "ar", "en").
+  /// Synced into the NEXT_LOCALE cookie so it follows the user across devices.
+  locale       String   @default("fr")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

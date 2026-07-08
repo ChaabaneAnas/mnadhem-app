@@ -18,7 +18,11 @@ export class OrdersService {
 
   async create(dto: CreateOrderDto, tenantId: string) {
     const existing = await this.prisma.order.findUnique({ where: { reference: dto.reference } });
-    if (existing) throw new ConflictException(`Order reference "${dto.reference}" already exists`);
+    if (existing)
+      throw new ConflictException({
+        code: 'ORDER_REFERENCE_TAKEN',
+        message: `Order reference "${dto.reference}" already exists`,
+      });
 
     const variantIds = dto.items.map((i) => i.variantId);
     const variants = await this.prisma.variant.findMany({
@@ -26,7 +30,10 @@ export class OrdersService {
     });
 
     if (variants.length !== variantIds.length) {
-      throw new BadRequestException('One or more variant IDs are invalid or do not belong to this tenant');
+      throw new BadRequestException({
+        code: 'INVALID_VARIANTS',
+        message: 'One or more variant IDs are invalid or do not belong to this tenant',
+      });
     }
 
     const variantMap = new Map(variants.map((v) => [v.id, v]));
@@ -54,7 +61,11 @@ export class OrdersService {
    */
   async createManual(dto: CreateOrderDto, tenantId: string) {
     const existing = await this.prisma.order.findUnique({ where: { reference: dto.reference } });
-    if (existing) throw new ConflictException(`Order reference "${dto.reference}" already exists`);
+    if (existing)
+      throw new ConflictException({
+        code: 'ORDER_REFERENCE_TAKEN',
+        message: `Order reference "${dto.reference}" already exists`,
+      });
 
     const variantIds = dto.items.map((i) => i.variantId);
     const variants = await this.prisma.variant.findMany({
@@ -62,7 +73,10 @@ export class OrdersService {
     });
 
     if (variants.length !== variantIds.length) {
-      throw new BadRequestException('One or more variant IDs are invalid or do not belong to this tenant');
+      throw new BadRequestException({
+        code: 'INVALID_VARIANTS',
+        message: 'One or more variant IDs are invalid or do not belong to this tenant',
+      });
     }
 
     const variantMap = new Map(variants.map((v) => [v.id, v]));
@@ -112,7 +126,8 @@ export class OrdersService {
         shipment: { include: { webhookEvents: { orderBy: { processedAt: 'asc' } } } },
       },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order)
+      throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'Order not found' });
     return order;
   }
 
@@ -124,11 +139,14 @@ export class OrdersService {
     const order = await this.prisma.order.findFirst({
       where: { id, tenantId, deletedAt: null },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order)
+      throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'Order not found' });
     if (order.status !== OrderStatus.PENDING_FULFILLMENT) {
-      throw new BadRequestException(
-        'Only orders with status "En attente" can be cancelled. Orders already with a courier cannot be recalled here.',
-      );
+      throw new BadRequestException({
+        code: 'ORDER_NOT_CANCELLABLE',
+        message:
+          'Only orders with status "En attente" can be cancelled. Orders already with a courier cannot be recalled here.',
+      });
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -148,7 +166,8 @@ export class OrdersService {
     const order = await this.prisma.order.findFirst({
       where: { id, tenantId, deletedAt: null },
     });
-    if (!order) throw new NotFoundException('Order not found');
+    if (!order)
+      throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'Order not found' });
 
     return this.prisma.$transaction(async (tx) => {
       if (order.status === OrderStatus.PENDING_FULFILLMENT) {

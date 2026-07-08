@@ -32,7 +32,11 @@ export class TenantsService {
     const tenant = await this.prisma.tenant.findFirst({
       where: { id: tenantId, members: { some: { userId } } },
     });
-    if (!tenant) throw new NotFoundException('Tenant not found or access denied');
+    if (!tenant)
+      throw new NotFoundException({
+        code: 'TENANT_NOT_FOUND',
+        message: 'Tenant not found or access denied',
+      });
     return tenant;
   }
 
@@ -42,7 +46,11 @@ export class TenantsService {
       const conflict = await this.prisma.tenant.findFirst({
         where: { slug: dto.slug, NOT: { id: tenantId } },
       });
-      if (conflict) throw new ConflictException(`Slug "${dto.slug}" is already taken`);
+      if (conflict)
+        throw new ConflictException({
+          code: 'SLUG_TAKEN',
+          message: `Slug "${dto.slug}" is already taken`,
+        });
     }
     return this.prisma.tenant.update({ where: { id: tenantId }, data: dto });
   }
@@ -52,7 +60,10 @@ export class TenantsService {
       where: { tenantId_userId: { tenantId, userId } },
     });
     if (!member || !roles.includes(member.role)) {
-      throw new ForbiddenException('Insufficient permissions');
+      throw new ForbiddenException({
+        code: 'INSUFFICIENT_PERMISSIONS',
+        message: 'Insufficient permissions',
+      });
     }
   }
 }

@@ -48,11 +48,16 @@ export class WebhooksController {
   ) {
     // 1. Resolve courier
     const courier = COURIER_PARAM_MAP[courierParam.toLowerCase()];
-    if (!courier) throw new BadRequestException(`Unknown courier: ${courierParam}`);
+    if (!courier)
+      throw new BadRequestException({
+        code: 'UNKNOWN_COURIER',
+        message: `Unknown courier: ${courierParam}`,
+      });
 
     // 2. Resolve tenant
     const tenant = await this.prisma.tenant.findUnique({ where: { slug: tenantSlug } });
-    if (!tenant) throw new NotFoundException('Tenant not found');
+    if (!tenant)
+      throw new NotFoundException({ code: 'TENANT_NOT_FOUND', message: 'Tenant not found' });
 
     // 3. Validate API key against the tenant's stored key for this courier
     this.validateApiKey(tenant, courier, apiKey);
@@ -80,7 +85,10 @@ export class WebhooksController {
 
     const storedKey = keyMap[courier];
     if (!storedKey || storedKey !== apiKey) {
-      throw new UnauthorizedException('Invalid API key for courier');
+      throw new UnauthorizedException({
+        code: 'INVALID_COURIER_API_KEY',
+        message: 'Invalid API key for courier',
+      });
     }
   }
 

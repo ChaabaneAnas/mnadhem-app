@@ -35,15 +35,17 @@ export async function apiRequest<T = unknown>(
 
   if (!res.ok) {
     const body = await res.text();
-    let message = `Request failed (${res.status})`;
+    // The backend returns a stable `code` (e.g. ORDER_NOT_FOUND) that the
+    // client maps to a translated message via `useErrorMessage`. We carry the
+    // code in the Error message so it survives the Server Action boundary.
+    let code = 'unknown';
     try {
-      const json = JSON.parse(body) as { message?: string | string[] };
-      const raw = json.message;
-      message = Array.isArray(raw) ? raw.join(', ') : (raw ?? message);
+      const json = JSON.parse(body) as { code?: string };
+      if (json.code) code = json.code;
     } catch {
-      if (body) message = body;
+      // Non-JSON body — leave as generic 'unknown'.
     }
-    throw new Error(message);
+    throw new Error(code);
   }
 
   return res.json() as Promise<T>;
