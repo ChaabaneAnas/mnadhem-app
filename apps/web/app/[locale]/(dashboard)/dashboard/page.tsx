@@ -92,14 +92,14 @@ export default async function DashboardPage({
   const trendUp = summary.ordersTrendPct >= 0;
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="mb-6 flex items-start justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-foreground">{t('title')}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <RangeSelect value={String(days)} />
           <Link
             href="/orders"

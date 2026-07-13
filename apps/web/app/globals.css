@@ -50,6 +50,11 @@
     · Trust Anchor     — Forest Green      #14532D (green-900)  → accent / CTAs
     · Supporting Mid   — Slate Gray        #64748B (slate-500)  → muted text, borders
 */
+
+body {
+  position: relative;
+}
+
 :root {
   --radius: 0.375rem;
 

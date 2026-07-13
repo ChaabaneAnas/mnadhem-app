@@ -44,7 +44,6 @@ export function InventoryTable({ variants }: { variants: InventoryRow[] }) {
                 (v.sku?.toLowerCase().includes(q) ?? false)
         );
     }, [variants, query]);
-    console.log('🚀 ~ InventoryTable ~ filtered:', filtered);
 
     const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const safePage = Math.min(page, pageCount - 1);
@@ -55,11 +54,11 @@ export function InventoryTable({ variants }: { variants: InventoryRow[] }) {
 
     return (
         <div className="rounded-lg border border-border bg-card">
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border">
+            <div className="flex flex-col gap-2 px-4 py-3 border-b border-border sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-sm font-semibold text-foreground">
                     {ti('title')}
                 </h2>
-                <div className="relative w-48">
+                <div className="relative w-full sm:w-48">
                     <Search
                         size={14}
                         className="absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -83,6 +82,39 @@ export function InventoryTable({ variants }: { variants: InventoryRow[] }) {
                     {t('noVariantsFound')}
                 </p>
             ) : (
+                <>
+                {/* Compact list rows (phone) */}
+                <div className="divide-y divide-border sm:hidden">
+                    {rows.map((v) => {
+                        const low = v.stockAvailable <= LOW_STOCK_THRESHOLD;
+                        return (
+                            <button
+                                key={v.id}
+                                type="button"
+                                onClick={() => router.push('/inventory')}
+                                className={`flex w-full items-center gap-3 px-4 py-3 text-start transition-colors ${low ? 'bg-red-50 dark:bg-red-950/30 hover:bg-red-100/60 dark:hover:bg-red-950/50' : 'hover:bg-muted/50'}`}
+                            >
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-xs text-foreground">
+                                        <span className="text-muted-foreground">{v.productName}</span>
+                                        {v.name && v.name !== v.productName ? ` · ${v.name}` : ''}
+                                    </p>
+                                    <p className="truncate font-mono text-xs text-muted-foreground">{v.sku ?? '—'}</p>
+                                </div>
+                                <div className="flex shrink-0 flex-col items-end gap-0.5">
+                                    <span className={`text-sm font-medium tabular-nums ${low ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>
+                                        {v.stockAvailable}
+                                    </span>
+                                    <span className="text-xs tabular-nums text-muted-foreground">{t('colPhysical')}: {v.stockPhysical}</span>
+                                </div>
+                                <ChevronRight size={16} className="shrink-0 text-muted-foreground rtl:rotate-180" />
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Table (tablet/desktop) */}
+                <div className="hidden sm:block">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -131,6 +163,8 @@ export function InventoryTable({ variants }: { variants: InventoryRow[] }) {
                         })}
                     </TableBody>
                 </Table>
+                </div>
+                </>
             )}
 
             {filtered.length > PAGE_SIZE && (

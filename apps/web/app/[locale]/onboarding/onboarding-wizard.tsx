@@ -59,7 +59,7 @@ function TrackSelector({ onSelect }: { onSelect: (t: Track) => void }) {
         <p className="mt-2 text-sm text-muted-foreground">{t('welcome')}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* User B — Social / DM */}
         <Button
           type="button"
