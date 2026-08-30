@@ -1,15 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { OrderStatus } from '@mnadhem/database';
 import { PrismaService } from '../prisma/prisma.service';
-
-const LOW_STOCK_THRESHOLD = 5;
-
-/** Returns a Date at 00:00:00 local time for the given date. */
-function startOfDay(d: Date): Date {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
+import { computeTenantMetrics, startOfDay } from './stats-metrics';
 
 /** Formats a Date as a YYYY-MM-DD key in local time. */
 function dayKey(d: Date): string {
@@ -24,65 +15,8 @@ export class StatsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Current operational KPIs plus the day-over-day order trend. */
-  async summary(tenantId: string) {
-    const [orders, products] = await Promise.all([
-      this.prisma.order.findMany({
-        where: { tenantId, deletedAt: null },
-        select: { codAmount: true, status: true, createdAt: true },
-      }),
-      this.prisma.product.findMany({
-        where: { tenantId, deletedAt: null },
-        select: {
-          variants: {
-            where: { deletedAt: null },
-            select: { stockAvailable: true },
-          },
-        },
-      }),
-    ]);
-
-    const today = startOfDay(new Date());
-    const yesterday = startOfDay(new Date(Date.now() - 86_400_000));
-
-    const ordersToday = orders.filter(
-      (o) => startOfDay(o.createdAt).getTime() === today.getTime(),
-    ).length;
-    const ordersYesterday = orders.filter(
-      (o) => startOfDay(o.createdAt).getTime() === yesterday.getTime(),
-    ).length;
-
-    const ordersTrendPct =
-      ordersYesterday === 0
-        ? ordersToday > 0
-          ? 100
-          : 0
-        : Math.round(((ordersToday - ordersYesterday) / ordersYesterday) * 100);
-
-    const inTransit = orders.filter((o) => o.status === OrderStatus.PROCESSING);
-    const floatingCapital = inTransit.reduce(
-      (sum, o) => sum + Number(o.codAmount),
-      0,
-    );
-    const toPack = orders.filter(
-      (o) => o.status === OrderStatus.PENDING_FULFILLMENT,
-    ).length;
-
-    const lowStockCount = products.reduce(
-      (count, p) =>
-        count +
-        p.variants.filter((v) => v.stockAvailable <= LOW_STOCK_THRESHOLD).length,
-      0,
-    );
-
-    return {
-      ordersToday,
-      ordersYesterday,
-      ordersTrendPct,
-      floatingCapital,
-      inTransitCount: inTransit.length,
-      lowStockCount,
-      toPack,
-    };
+  summary(tenantId: string) {
+    return computeTenantMetrics(this.prisma, tenantId);
   }
 
   /**
@@ -121,9 +55,9 @@ export class StatsService {
   }
 
   /**
-   * Historical snapshot metrics (floating capital, low-stock count) over the
-   * last `days` days. Sourced from MetricSnapshot — empty until the daily
-   * snapshot job has recorded rows.
+   * Historical snapshot metrics (cash in transit, awaiting remittance, low-stock
+   * count) over the last `days` days. Sourced from MetricSnapshot — empty until
+   * the daily snapshot job has recorded rows.
    */
   async snapshots(tenantId: string, days: number) {
     const span = Math.min(Math.max(days, 1), 90);
@@ -134,7 +68,8 @@ export class StatsService {
       orderBy: { date: 'asc' },
       select: {
         date: true,
-        floatingCapital: true,
+        cashInTransit: true,
+        awaitingRemittance: true,
         lowStockCount: true,
         ordersToPack: true,
       },
@@ -142,7 +77,8 @@ export class StatsService {
 
     return rows.map((r) => ({
       date: dayKey(r.date),
-      floatingCapital: Number(r.floatingCapital),
+      cashInTransit: Number(r.cashInTransit),
+      awaitingRemittance: Number(r.awaitingRemittance),
       lowStockCount: r.lowStockCount,
       ordersToPack: r.ordersToPack,
     }));

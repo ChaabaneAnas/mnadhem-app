@@ -22,7 +22,8 @@
     "inventory": "Inventaire",
     "orders": "Commandes",
     "settings": "Paramètres",
-    "signOut": "Déconnexion"
+    "signOut": "Déconnexion",
+    "remittance": "Versements"
   },
   "auth": {
     "signIn": {
@@ -106,7 +107,9 @@
     "colAvailable": "Disponible",
     "pageRange": "{from}–{to} sur {total}",
     "prevPage": "Page précédente",
-    "nextPage": "Page suivante"
+    "nextPage": "Page suivante",
+    "awaitingRemittance": "Versement en attente",
+    "collectedNotPaid": "Encaissé, pas encore versé"
   },
   "orders": {
     "title": "Commandes",
@@ -256,5 +259,23 @@
     "SLUG_INVALID_FORMAT": "L'identifiant doit contenir uniquement des lettres minuscules, des chiffres et des tirets.",
     "TENANT_NOT_FOUND": "Boutique introuvable.",
     "INVALID_COURIER_API_KEY": "Clé API invalide pour le transporteur."
+  },
+  "remittance": {
+    "title": "Versements",
+    "subtitle": "Argent encaissé par les transporteurs, pas encore versé",
+    "totalOutstanding": "Total en attente",
+    "parcelCount": "{count, plural, =0 {Aucun colis} one {# colis} other {# colis}} en attente de versement",
+    "selectPrompt": "Sélectionnez les colis couverts par un versement",
+    "selectedSummary": "{count} sélectionné(s) · {amount}",
+    "markPaid": "Marquer comme versé",
+    "markPaidRow": "Marquer versé",
+    "marking": "Enregistrement…",
+    "allSettled": "Aucun versement en attente. Tous les colis livrés ont été versés.",
+    "selectAll": "Tout sélectionner",
+    "colReference": "Référence",
+    "colTracking": "Suivi",
+    "colCustomer": "Client",
+    "colWilaya": "Wilaya",
+    "colAmount": "Montant"
   }
 }

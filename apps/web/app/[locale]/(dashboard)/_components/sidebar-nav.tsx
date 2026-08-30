@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
-import { LayoutDashboard, Layers, ShoppingCart, Settings } from 'lucide-react';
+import { LayoutDashboard, Layers, ShoppingCart, Wallet, Settings } from 'lucide-react';
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -13,6 +13,7 @@ const navItems = [
   { href: '/dashboard', key: 'dashboard', icon: LayoutDashboard },
   { href: '/inventory', key: 'inventory', icon: Layers },
   { href: '/orders', key: 'orders', icon: ShoppingCart },
+  { href: '/remittance', key: 'remittance', icon: Wallet },
   { href: '/settings', key: 'settings', icon: Settings },
 ] as const;
 

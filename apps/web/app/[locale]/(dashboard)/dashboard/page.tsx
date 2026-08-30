@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { Banknote, ShoppingBag, AlertTriangle, Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import { Banknote, Wallet, ShoppingBag, AlertTriangle, Plus, TrendingUp, TrendingDown } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
 import { formatTND } from '@/lib/format';
 import type { OrderStatus } from '@/lib/order-status';
@@ -16,7 +16,8 @@ interface Summary {
   ordersToday: number;
   ordersYesterday: number;
   ordersTrendPct: number;
-  floatingCapital: number;
+  cashInTransit: number;
+  awaitingRemittance: number;
   inTransitCount: number;
   lowStockCount: number;
   toPack: number;
@@ -56,7 +57,8 @@ const EMPTY_SUMMARY: Summary = {
   ordersToday: 0,
   ordersYesterday: 0,
   ordersTrendPct: 0,
-  floatingCapital: 0,
+  cashInTransit: 0,
+  awaitingRemittance: 0,
   inTransitCount: 0,
   lowStockCount: 0,
   toPack: 0,
@@ -112,7 +114,7 @@ export default async function DashboardPage({
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Orders Today */}
         <div className="rounded-lg border border-border bg-card p-5">
           <div className="flex items-start justify-between">
@@ -159,12 +161,35 @@ export default async function DashboardPage({
             </div>
             <div className="mt-3">
               <span className="text-2xl font-semibold tabular-nums text-foreground">
-                {formatTND(summary.floatingCapital)}
+                {formatTND(summary.cashInTransit)}
               </span>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
               {t('ordersInTransit', { count: summary.inTransitCount })}
             </p>
+          </div>
+        </Link>
+
+        {/* Awaiting Remittance */}
+        <Link
+          href="/remittance"
+          className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <div className="rounded-lg border border-border bg-card p-5 hover:border-ring transition-colors">
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {t('awaitingRemittance')}
+              </span>
+              <div className="rounded-lg bg-secondary p-2">
+                <Wallet size={16} className="text-muted-foreground" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl font-semibold tabular-nums text-foreground">
+                {formatTND(summary.awaitingRemittance)}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{t('collectedNotPaid')}</p>
           </div>
         </Link>
 

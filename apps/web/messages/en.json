@@ -22,7 +22,8 @@
     "inventory": "Inventory",
     "orders": "Orders",
     "settings": "Settings",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "remittance": "Remittance"
   },
   "auth": {
     "signIn": {
@@ -106,7 +107,9 @@
     "colAvailable": "Available",
     "pageRange": "{from}–{to} of {total}",
     "prevPage": "Previous page",
-    "nextPage": "Next page"
+    "nextPage": "Next page",
+    "awaitingRemittance": "Awaiting Remittance",
+    "collectedNotPaid": "Collected, not yet paid out"
   },
   "orders": {
     "title": "Orders",
@@ -256,5 +259,23 @@
     "SLUG_INVALID_FORMAT": "Slug must be lowercase letters, numbers, and hyphens only.",
     "TENANT_NOT_FOUND": "Store not found.",
     "INVALID_COURIER_API_KEY": "Invalid API key for courier."
+  },
+  "remittance": {
+    "title": "Remittance",
+    "subtitle": "Cash couriers have collected but not yet paid to you",
+    "totalOutstanding": "Total Outstanding",
+    "parcelCount": "{count, plural, =0 {No parcels} one {# parcel} other {# parcels}} awaiting payout",
+    "selectPrompt": "Select the parcels covered by a courier payout",
+    "selectedSummary": "{count} selected · {amount}",
+    "markPaid": "Mark as paid",
+    "markPaidRow": "Mark paid",
+    "marking": "Saving…",
+    "allSettled": "Nothing outstanding. Every delivered parcel has been paid out.",
+    "selectAll": "Select all",
+    "colReference": "Reference",
+    "colTracking": "Tracking",
+    "colCustomer": "Customer",
+    "colWilaya": "Wilaya",
+    "colAmount": "Amount"
   }
 }

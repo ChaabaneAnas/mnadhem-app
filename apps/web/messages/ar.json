@@ -22,7 +22,8 @@
     "inventory": "المخزون",
     "orders": "الطلبات",
     "settings": "الإعدادات",
-    "signOut": "تسجيل الخروج"
+    "signOut": "تسجيل الخروج",
+    "remittance": "التحويلات"
   },
   "auth": {
     "signIn": {
@@ -106,7 +107,9 @@
     "colAvailable": "المتاح",
     "pageRange": "{from}–{to} من {total}",
     "prevPage": "الصفحة السابقة",
-    "nextPage": "الصفحة التالية"
+    "nextPage": "الصفحة التالية",
+    "awaitingRemittance": "في انتظار التحويل",
+    "collectedNotPaid": "محصّل، لم يُحوَّل بعد"
   },
   "orders": {
     "title": "الطلبات",
@@ -256,5 +259,23 @@
     "SLUG_INVALID_FORMAT": "يجب أن يحتوي المعرّف على أحرف إنجليزية صغيرة وأرقام وشرطات فقط.",
     "TENANT_NOT_FOUND": "المتجر غير موجود.",
     "INVALID_COURIER_API_KEY": "مفتاح API غير صالح لشركة التوصيل."
+  },
+  "remittance": {
+    "title": "التحويلات",
+    "subtitle": "الأموال التي حصّلها الناقلون ولم تُحوَّل إليك بعد",
+    "totalOutstanding": "إجمالي المستحقات",
+    "parcelCount": "{count, plural, zero {لا توجد طرود} one {طرد واحد} two {طردان} few {# طرود} many {# طردًا} other {# طرد}} في انتظار التحويل",
+    "selectPrompt": "اختر الطرود المشمولة بتحويل الناقل",
+    "selectedSummary": "{count} محدد · {amount}",
+    "markPaid": "تعليم كمحوَّل",
+    "markPaidRow": "تعليم كمحوَّل",
+    "marking": "جارٍ الحفظ…",
+    "allSettled": "لا توجد تحويلات معلّقة. جميع الطرود المسلّمة تم تحويل مبالغها.",
+    "selectAll": "تحديد الكل",
+    "colReference": "المرجع",
+    "colTracking": "التتبع",
+    "colCustomer": "العميل",
+    "colWilaya": "الولاية",
+    "colAmount": "المبلغ"
   }
 }

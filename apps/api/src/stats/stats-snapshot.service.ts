@@ -1,19 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { OrderStatus } from '@mnadhem/database';
 import { PrismaService } from '../prisma/prisma.service';
-
-const LOW_STOCK_THRESHOLD = 5;
-
-function startOfDay(d: Date): Date {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
+import { computeTenantMetrics, startOfDay } from './stats-metrics';
 
 /**
  * Captures a daily MetricSnapshot per tenant so point-in-time metrics
- * (floating capital, low-stock count) build up a chartable history.
+ * (cash in transit, awaiting remittance, low-stock count) build up a
+ * chartable history.
  */
 @Injectable()
 export class StatsSnapshotService {
@@ -33,43 +26,16 @@ export class StatsSnapshotService {
 
   /** Computes and upserts today's snapshot for a single tenant. */
   async captureForTenant(tenantId: string) {
-    const [orders, products] = await Promise.all([
-      this.prisma.order.findMany({
-        where: { tenantId, deletedAt: null },
-        select: { codAmount: true, status: true },
-      }),
-      this.prisma.product.findMany({
-        where: { tenantId, deletedAt: null },
-        select: {
-          variants: {
-            where: { deletedAt: null },
-            select: { stockAvailable: true },
-          },
-        },
-      }),
-    ]);
-
-    const floatingCapital = orders
-      .filter((o) => o.status === OrderStatus.PROCESSING)
-      .reduce((sum, o) => sum + Number(o.codAmount), 0);
-
-    const ordersToPack = orders.filter(
-      (o) => o.status === OrderStatus.PENDING_FULFILLMENT,
-    ).length;
-
-    const lowStockCount = products.reduce(
-      (count, p) =>
-        count +
-        p.variants.filter((v) => v.stockAvailable <= LOW_STOCK_THRESHOLD).length,
-      0,
-    );
+    const { cashInTransit, awaitingRemittance, lowStockCount, ordersToPack } =
+      await computeTenantMetrics(this.prisma, tenantId);
 
     const date = startOfDay(new Date());
+    const values = { cashInTransit, awaitingRemittance, lowStockCount, ordersToPack };
 
     return this.prisma.metricSnapshot.upsert({
       where: { tenantId_date: { tenantId, date } },
-      create: { tenantId, date, floatingCapital, lowStockCount, ordersToPack },
-      update: { floatingCapital, lowStockCount, ordersToPack },
+      create: { tenantId, date, ...values },
+      update: values,
     });
   }
 }

@@ -256,6 +256,9 @@ model Shipment {
   updatedAt DateTime @updatedAt
 
   webhookEvents WebhookEvent[]
+
+  /// Backs the awaiting-remittance sum, which runs on every dashboard load
+  @@index([status, remittedAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -302,12 +305,16 @@ model MetricSnapshot {
   /// Calendar day this snapshot represents (no time component)
   date DateTime @db.Date
 
-  /// Total COD value of orders in transit (PROCESSING) at capture time
-  floatingCapital Decimal @default(0) @db.Decimal(12, 2)
+  /// COD value of orders still in transit (PROCESSING) at capture time — goods
+  /// at delivery risk, where the customer has not paid anyone yet.
+  cashInTransit      Decimal @default(0) @db.Decimal(12, 2)
+  /// Cash the courier already collected on delivery but has not yet remitted to
+  /// the merchant (Shipment.status LIVRE with remittedAt still null).
+  awaitingRemittance Decimal @default(0) @db.Decimal(12, 2)
   /// Count of variants at or below the low-stock threshold
-  lowStockCount   Int     @default(0)
+  lowStockCount      Int     @default(0)
   /// Count of orders awaiting fulfillment (PENDING_FULFILLMENT)
-  ordersToPack    Int     @default(0)
+  ordersToPack       Int     @default(0)
 
   createdAt DateTime @default(now())
 
