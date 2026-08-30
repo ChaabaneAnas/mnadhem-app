@@ -1,10 +1,10 @@
 import type { Courier } from '@mnadhem/database';
 
 export type WebhookEventType =
-  | 'EN_COURS'
-  | 'LIVRE'
-  | 'RETOURNE'
-  | 'HORS_ZONE'
+  | 'IN_TRANSIT'
+  | 'DELIVERED'
+  | 'RETURNED'
+  | 'OUT_OF_ZONE'
   | 'UNKNOWN';
 
 export interface ICourierWebhookPayload {

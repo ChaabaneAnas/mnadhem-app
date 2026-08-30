@@ -6,11 +6,14 @@ import type {
   WebhookEventType,
 } from '../interfaces/courier-webhook-payload.interface';
 
+// Identity by coincidence, not redundancy: the left column is Aramex's wire
+// vocabulary and the right is ours, and they happen to agree. Aramex is free to
+// change its side without consulting us, so the mapping layer stays.
 const STATUS_MAP: Record<string, WebhookEventType> = {
-  'IN_TRANSIT': 'EN_COURS',
-  'DELIVERED': 'LIVRE',
-  'RETURNED': 'RETOURNE',
-  'OUT_OF_ZONE': 'HORS_ZONE',
+  'IN_TRANSIT': 'IN_TRANSIT',
+  'DELIVERED': 'DELIVERED',
+  'RETURNED': 'RETURNED',
+  'OUT_OF_ZONE': 'OUT_OF_ZONE',
 };
 
 @Injectable()

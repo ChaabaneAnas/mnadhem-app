@@ -8,10 +8,10 @@ import type {
 
 // Status strings as documented by Yalidine (to be confirmed against real API docs)
 const STATUS_MAP: Record<string, WebhookEventType> = {
-  'En Cours': 'EN_COURS',
-  'Livré': 'LIVRE',
-  'Retourné': 'RETOURNE',
-  'Hors Zone': 'HORS_ZONE',
+  'En Cours': 'IN_TRANSIT',
+  'Livré': 'DELIVERED',
+  'Retourné': 'RETURNED',
+  'Hors Zone': 'OUT_OF_ZONE',
 };
 
 @Injectable()

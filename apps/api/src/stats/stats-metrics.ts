@@ -52,7 +52,7 @@ export async function computeTenantMetrics(
     prisma.shipment.aggregate({
       _sum: { collectedCash: true },
       where: {
-        status: ShipmentStatus.LIVRE,
+        status: ShipmentStatus.DELIVERED,
         remittedAt: null,
         order: { tenantId, deletedAt: null },
       },

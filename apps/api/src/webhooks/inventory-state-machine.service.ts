@@ -12,29 +12,29 @@ interface StockDelta {
 }
 
 // Maps each courier event to the signed delta applied per unit of quantity.
-// EN_COURS  : Available → Reserved (physical unchanged)
-// LIVRE     : sale finalised — physical and reserved both shrink
-// RETOURNE  : reservation cancelled — reserved shrinks, available recovers
-// HORS_ZONE : treated identically to RETOURNE
+// IN_TRANSIT  : Available → Reserved (physical unchanged)
+// DELIVERED   : sale finalised — physical and reserved both shrink
+// RETURNED    : reservation cancelled — reserved shrinks, available recovers
+// OUT_OF_ZONE : treated identically to RETURNED
 const DELTA_MAP: Partial<Record<WebhookEventType, StockDelta>> = {
-  EN_COURS: { physical: 0, reserved: 1, available: -1 },
-  LIVRE: { physical: -1, reserved: -1, available: 0 },
-  RETOURNE: { physical: 0, reserved: -1, available: 1 },
-  HORS_ZONE: { physical: 0, reserved: -1, available: 1 },
+  IN_TRANSIT: { physical: 0, reserved: 1, available: -1 },
+  DELIVERED: { physical: -1, reserved: -1, available: 0 },
+  RETURNED: { physical: 0, reserved: -1, available: 1 },
+  OUT_OF_ZONE: { physical: 0, reserved: -1, available: 1 },
 };
 
 const SHIPMENT_STATUS_MAP: Partial<Record<WebhookEventType, ShipmentStatus>> = {
-  EN_COURS: ShipmentStatus.EN_COURS,
-  LIVRE: ShipmentStatus.LIVRE,
-  RETOURNE: ShipmentStatus.RETOURNE,
-  HORS_ZONE: ShipmentStatus.HORS_ZONE,
+  IN_TRANSIT: ShipmentStatus.IN_TRANSIT,
+  DELIVERED: ShipmentStatus.DELIVERED,
+  RETURNED: ShipmentStatus.RETURNED,
+  OUT_OF_ZONE: ShipmentStatus.OUT_OF_ZONE,
 };
 
 const ORDER_STATUS_MAP: Partial<Record<WebhookEventType, OrderStatus>> = {
-  EN_COURS: OrderStatus.PROCESSING,
-  LIVRE: OrderStatus.DELIVERED,
-  RETOURNE: OrderStatus.RETURNED,
-  HORS_ZONE: OrderStatus.RETURNED,
+  IN_TRANSIT: OrderStatus.PROCESSING,
+  DELIVERED: OrderStatus.DELIVERED,
+  RETURNED: OrderStatus.RETURNED,
+  OUT_OF_ZONE: OrderStatus.RETURNED,
 };
 
 @Injectable()
@@ -126,11 +126,11 @@ export class InventoryStateMachineService {
       const stockDeltas: unknown[] = [];
 
       if (shipment && deltaSign) {
-        // EN_COURS on a PENDING_FULFILLMENT order means stock was already reserved
-        // at manual order creation time — skip the inventory mutation and only
-        // advance the statuses to avoid a double-reservation.
+        // IN_TRANSIT on a PENDING_FULFILLMENT order means stock was already
+        // reserved at manual order creation time — skip the inventory mutation
+        // and only advance the statuses to avoid a double-reservation.
         const stockAlreadyReserved =
-          event === 'EN_COURS' &&
+          event === 'IN_TRANSIT' &&
           shipment.order.status === OrderStatus.PENDING_FULFILLMENT;
 
         if (!stockAlreadyReserved) {
@@ -156,7 +156,7 @@ export class InventoryStateMachineService {
           where: { id: shipment.id },
           data: {
             ...(newShipmentStatus && { status: newShipmentStatus }),
-            ...(event === 'LIVRE' && { collectedCash: shipment.order.codAmount }),
+            ...(event === 'DELIVERED' && { collectedCash: shipment.order.codAmount }),
           },
         });
 

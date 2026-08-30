@@ -7,10 +7,10 @@ import type {
 } from '../interfaces/courier-webhook-payload.interface';
 
 const STATUS_MAP: Record<string, WebhookEventType> = {
-  'en_cours': 'EN_COURS',
-  'livré': 'LIVRE',
-  'retourné': 'RETOURNE',
-  'hors_zone': 'HORS_ZONE',
+  'en_cours': 'IN_TRANSIT',
+  'livré': 'DELIVERED',
+  'retourné': 'RETURNED',
+  'hors_zone': 'OUT_OF_ZONE',
 };
 
 @Injectable()

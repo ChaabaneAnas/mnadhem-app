@@ -20,16 +20,16 @@ enum Courier {
 
 /// State machine for a shipment, driven by courier webhook events.
 /// Transitions:
-///   PENDING → EN_COURS  : courier confirms pickup  (stock Available → Reserved)
-///   EN_COURS → LIVRE    : delivery confirmed        (stock Physical & Reserved ↓)
-///   EN_COURS → RETOURNE : refusal / return          (stock Reserved ↓, Available ↑)
-///   EN_COURS → HORS_ZONE: undeliverable zone        (treated same as RETOURNE)
+///   PENDING    → IN_TRANSIT  : courier confirms pickup (stock Available → Reserved)
+///   IN_TRANSIT → DELIVERED   : delivery confirmed      (stock Physical & Reserved ↓)
+///   IN_TRANSIT → RETURNED    : refusal / return        (stock Reserved ↓, Available ↑)
+///   IN_TRANSIT → OUT_OF_ZONE : undeliverable zone      (treated same as RETURNED)
 enum ShipmentStatus {
   PENDING
-  EN_COURS
-  LIVRE
-  RETOURNE
-  HORS_ZONE
+  IN_TRANSIT
+  DELIVERED
+  RETURNED
+  OUT_OF_ZONE
 }
 
 /// Roles a team member can hold within a tenant workspace
@@ -42,10 +42,10 @@ enum Role {
 /// Merchant-facing business state of an order, driven by merchant actions and courier webhooks.
 /// Runs in parallel with ShipmentStatus (the courier-facing logistics state).
 /// Transitions:
-///   PENDING_FULFILLMENT → PROCESSING : EN_COURS webhook (stock already reserved, no mutation)
+///   PENDING_FULFILLMENT → PROCESSING : IN_TRANSIT webhook (stock already reserved, no mutation)
 ///   PENDING_FULFILLMENT → CANCELLED  : merchant cancels (stock rollback: Available++, Reserved--)
-///   PROCESSING → DELIVERED            : LIVRE webhook (Physical--, Reserved--)
-///   PROCESSING → RETURNED             : RETOURNE / HORS_ZONE webhook (Reserved--, Available++)
+///   PROCESSING → DELIVERED           : DELIVERED webhook (Physical--, Reserved--)
+///   PROCESSING → RETURNED            : RETURNED / OUT_OF_ZONE webhook (Reserved--, Available++)
 enum OrderStatus {
   PENDING_FULFILLMENT
   PROCESSING
@@ -243,7 +243,7 @@ model Shipment {
   courier        Courier
   status         ShipmentStatus @default(PENDING)
 
-  /// Cash collected from the customer by the courier (set on LIVRE)
+  /// Cash collected from the customer by the courier (set on DELIVERED)
   collectedCash Decimal?  @db.Decimal(10, 2)
   /// Timestamp when the courier remitted the collected cash back to the merchant.
   /// Null until remittance occurs — used to compute total Floating Capital.
@@ -271,7 +271,8 @@ model Shipment {
 model WebhookEvent {
   id          String   @id @default(cuid())
   courier     Courier
-  /// Raw event-type string as received from the courier (e.g. "En Cours", "Livré")
+  /// Normalized event type the adapter resolved this webhook to (e.g. "DELIVERED").
+  /// The courier's own wording is not stored here — it survives in `payload`.
   eventType   String
   /// Complete raw webhook payload for forensic traceability
   payload     Json
@@ -309,7 +310,7 @@ model MetricSnapshot {
   /// at delivery risk, where the customer has not paid anyone yet.
   cashInTransit      Decimal @default(0) @db.Decimal(12, 2)
   /// Cash the courier already collected on delivery but has not yet remitted to
-  /// the merchant (Shipment.status LIVRE with remittedAt still null).
+  /// the merchant (Shipment.status DELIVERED with remittedAt still null).
   awaitingRemittance Decimal @default(0) @db.Decimal(12, 2)
   /// Count of variants at or below the low-stock threshold
   lowStockCount      Int     @default(0)

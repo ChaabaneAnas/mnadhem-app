@@ -55,7 +55,7 @@ export class ShipmentsService {
   listAwaitingRemittance(tenantId: string) {
     return this.prisma.shipment.findMany({
       where: {
-        status: ShipmentStatus.LIVRE,
+        status: ShipmentStatus.DELIVERED,
         remittedAt: null,
         order: { tenantId, deletedAt: null },
       },
@@ -78,7 +78,7 @@ export class ShipmentsService {
         code: 'SHIPMENT_NOT_FOUND',
         message: 'Shipment not found',
       });
-    if (shipment.status !== ShipmentStatus.LIVRE)
+    if (shipment.status !== ShipmentStatus.DELIVERED)
       throw new BadRequestException({
         code: 'SHIPMENT_NOT_DELIVERED',
         message: 'Only delivered shipments can be marked remitted',
@@ -103,7 +103,7 @@ export class ShipmentsService {
       const eligible = await tx.shipment.findMany({
         where: {
           id: { in: requested },
-          status: ShipmentStatus.LIVRE,
+          status: ShipmentStatus.DELIVERED,
           remittedAt: null,
           order: { tenantId, deletedAt: null },
         },
