@@ -1,0 +1,5 @@
+# Shell scripts run inside Linux containers; CRLF breaks the shebang
+# ("/bin/sh^M: bad interpreter") when the build context comes from a
+# Windows checkout with core.autocrlf=true.
+*.sh text eol=lf
+Dockerfile text eol=lf
