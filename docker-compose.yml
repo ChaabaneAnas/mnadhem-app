@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mnadhem}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mnadhem}
+      POSTGRES_DB: ${POSTGRES_DB:-mnadhem_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mnadhem} -d ${POSTGRES_DB:-mnadhem_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mnadhem}:${POSTGRES_PASSWORD:-mnadhem}@postgres:5432/${POSTGRES_DB:-mnadhem_db}?schema=public
+      AUTH_SECRET: ${AUTH_SECRET}
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

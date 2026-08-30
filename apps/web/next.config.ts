@@ -1,9 +1,22 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
+// Docker-image build only (apps/web/Dockerfile sets DOCKER_BUILD=1). Next 16
+// also uses `outputFileTracingRoot` as the Turbopack *dev* root, so applying
+// these unconditionally re-roots the dev bundler at the monorepo root and it
+// ends up watching its own .next output until the machine runs out of memory.
+const isDockerBuild = process.env.DOCKER_BUILD === "1";
+
 const nextConfig: NextConfig = {
+  ...(isDockerBuild
+    ? {
+        output: "standalone",
+        outputFileTracingRoot: path.resolve(process.cwd(), "../.."),
+      }
+    : {}),
   serverExternalPackages: ['pg', '@prisma/adapter-pg', '@mnadhem/database'],
   typescript: {
     ignoreBuildErrors: true,

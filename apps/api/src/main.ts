@@ -30,8 +30,10 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
   app.enableCors({
     origin: [
-      'http://localhost:3000', // Your local frontend dev server
-      /\.vercel\.app$/,        // Allows any preview/production deployment from Vercel
+      'http://localhost:3001', // Local Next.js dev server (apps/web)
+      // Deployed web origin. The dashboard reaches the API server-side via
+      // apps/web/lib/api.ts, so this only covers direct browser requests.
+      ...(process.env['WEB_ORIGIN'] ? [process.env['WEB_ORIGIN']] : []),
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
@@ -45,8 +47,10 @@ async function bootstrap() {
   );
 
   const port = process.env['PORT'] ?? 3000;
-  await app.listen(port);
-  console.log(`[bootstrap] Listening on http://localhost:${port}`);
+  // Bind dual-stack: Railway's private network (`*.railway.internal`) resolves
+  // to IPv6 only, and Nest's default bind would not accept those connections.
+  await app.listen(port, '::');
+  console.log(`[bootstrap] Listening on port ${port}`);
 }
 
 bootstrap().catch((err) => {

@@ -3,7 +3,7 @@ import { SignJWT } from 'jose';
 import { auth } from '@/auth';
 
 const secret = new TextEncoder().encode(process.env.AUTH_SECRET!);
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
 async function getToken(userId: string, tenantId: string): Promise<string> {
   return new SignJWT({ userId, activeTenantId: tenantId })

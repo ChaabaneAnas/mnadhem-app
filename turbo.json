@@ -1,12 +1,12 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["NODE_ENV", "AUTH_SECRET"],
+  "globalEnv": ["NODE_ENV", "AUTH_SECRET", "API_URL", "WEB_ORIGIN", "DOCKER_BUILD"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "!.next/dev/**","packages/database/generated/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "!.next/dev/**", "generated/**"]
     },
     "lint": {
       "dependsOn": ["^lint"]
