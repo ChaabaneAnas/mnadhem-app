@@ -9,6 +9,24 @@ import { PrismaService } from '../prisma/prisma.service';
 import { InventoryStateMachineService } from '../webhooks/inventory-state-machine.service';
 import type { CreateOrderDto } from './dto/create-order.dto';
 
+/**
+ * Statuses in which a manual order's stock is still held as reserved — it was
+ * reserved at creation and is only consumed or released by a courier webhook.
+ * Generating an AWB and requesting a pickup move an order between these without
+ * touching inventory, so anything that unwinds an order must cover all three.
+ */
+const STOCK_RESERVED_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  OrderStatus.PENDING_FULFILLMENT,
+  OrderStatus.READY_FOR_SHIPMENT,
+  OrderStatus.PICKUP_REQUESTED,
+]);
+
+/** Cancellable while the parcel is still in the merchant's hands. */
+const CANCELLABLE_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  OrderStatus.PENDING_FULFILLMENT,
+  OrderStatus.READY_FOR_SHIPMENT,
+]);
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -132,8 +150,13 @@ export class OrdersService {
   }
 
   /**
-   * Cancels a PENDING_FULFILLMENT order and releases its stock reservation atomically.
-   * Only valid while the order has not yet been handed to a courier.
+   * Cancels an order and releases its stock reservation atomically.
+   *
+   * Allowed up to the point a pickup is requested. A label having been printed
+   * is not a reason to refuse — merchants void packed parcels routinely — but
+   * once the courier has been asked to collect, cancelling here would leave them
+   * turning up for a parcel the merchant believes is voided. That has to be
+   * settled with the courier, not in this app.
    */
   async cancel(id: string, tenantId: string) {
     const order = await this.prisma.order.findFirst({
@@ -141,11 +164,12 @@ export class OrdersService {
     });
     if (!order)
       throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'Order not found' });
-    if (order.status !== OrderStatus.PENDING_FULFILLMENT) {
+    if (!CANCELLABLE_STATUSES.has(order.status)) {
       throw new BadRequestException({
         code: 'ORDER_NOT_CANCELLABLE',
         message:
-          'Only orders with status "En attente" can be cancelled. Orders already with a courier cannot be recalled here.',
+          'Only orders that have not been collected yet can be cancelled. Once a pickup is ' +
+          'requested, cancel with the courier directly.',
       });
     }
 
@@ -159,8 +183,10 @@ export class OrdersService {
   }
 
   /**
-   * Soft-deletes an order. If the order is still PENDING_FULFILLMENT, its stock
-   * reservation is released in the same transaction before archiving the record.
+   * Soft-deletes an order. If its stock is still reserved — true for every
+   * pre-transit status, not just PENDING_FULFILLMENT — the reservation is
+   * released in the same transaction before archiving the record. Missing the
+   * two fulfillment states here would strand the reserved units permanently.
    */
   async remove(id: string, tenantId: string) {
     const order = await this.prisma.order.findFirst({
@@ -170,7 +196,7 @@ export class OrdersService {
       throw new NotFoundException({ code: 'ORDER_NOT_FOUND', message: 'Order not found' });
 
     return this.prisma.$transaction(async (tx) => {
-      if (order.status === OrderStatus.PENDING_FULFILLMENT) {
+      if (STOCK_RESERVED_STATUSES.has(order.status)) {
         await this.stateMachine.releaseOrderReservation(id, tenantId, tx);
       }
       return tx.order.update({
@@ -180,3 +206,4 @@ export class OrdersService {
     });
   }
 }
+

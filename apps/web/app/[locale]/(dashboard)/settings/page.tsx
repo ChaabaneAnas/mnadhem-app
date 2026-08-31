@@ -1,52 +1,90 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
+import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/hooks/use-toast';
+import { useErrorMessage } from '@/lib/api-error';
+import { AramexForm } from './_components/aramex-form';
+import { getAramexAccount, updateStore, type AramexAccountView } from './actions';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
   const tc = useTranslations('common');
-  const [saved, setSaved] = useState(false);
+  const getError = useErrorMessage();
 
-  async function handleSave(e: React.FormEvent<HTMLFormElement>) {
+  const [account, setAccount] = useState<AramexAccountView | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadCount, setReloadCount] = useState(0);
+  const [savingStore, startSavingStore] = useTransition();
+
+  /**
+   * Stable by construction: it closes over nothing and only bumps a counter,
+   * so passing it to child components can never re-trigger the fetch below.
+   */
+  const reloadAccounts = useCallback(() => setReloadCount((n) => n + 1), []);
+
+  /**
+   * Depends only on the reload counter. Deliberately does not close over the
+   * error translator or a toast call — an effect that both fetches and depends
+   * on a function identity re-runs on every render, which is an unbounded
+   * request loop. The failure is held as state and rendered below instead.
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    getAramexAccount()
+      .then((data) => {
+        if (cancelled) return;
+        setAccount(data);
+        setLoadError(null);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setLoadError(err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadCount]);
+
+  /**
+   * Errors used to be swallowed here with a `// silent` comment, so a rejected
+   * slug looked identical to a successful save.
+   */
+  function handleSaveStore(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
-    const body = {
-      name: data.get('name'),
-      slug: data.get('slug'),
-      yalidineApiKey: data.get('yalidineApiKey') || undefined,
-      aramexApiKey: data.get('aramexApiKey') || undefined,
-      jexportApiKey: data.get('jexportApiKey') || undefined,
-    };
+    const name = String(data.get('name') ?? '').trim();
+    const slug = String(data.get('slug') ?? '').trim();
 
-    try {
-      const res = await fetch(
-        `/api/settings/tenant`,
-        { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
-      );
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+    startSavingStore(async () => {
+      try {
+        await updateStore({
+          ...(name ? { name } : {}),
+          ...(slug ? { slug } : {}),
+        });
+        toast({ variant: 'success', title: t('savedSuccess') });
+      } catch (err) {
+        toast({ variant: 'destructive', title: getError(err) });
       }
-    } catch {
-      // silent — production should add proper error handling
-    }
+    });
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-lg">
+    <div className="max-w-2xl p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-foreground">{t('title')}</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-6">
-        {/* Store details */}
-        <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+      <form onSubmit={handleSaveStore} className="mb-8">
+        <div className="space-y-4 rounded-lg border border-border bg-card p-6">
           <h2 className="text-sm font-semibold text-foreground">{t('storeDetails')}</h2>
 
           <div className="space-y-1.5">
@@ -56,42 +94,48 @@ export default function SettingsPage() {
 
           <div className="space-y-1.5">
             <Label htmlFor="slug">{t('slug')}</Label>
-            <Input id="slug" name="slug" placeholder="my-store" className="text-sm font-mono" />
+            <Input id="slug" name="slug" placeholder="my-store" className="font-mono text-sm" />
             <p className="text-xs text-muted-foreground">{t('slugHint')}</p>
           </div>
-        </div>
 
-        {/* Courier API keys */}
-        <div className="rounded-lg border border-border bg-card p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-foreground">{t('courierKeys')}</h2>
-          <p className="text-xs text-muted-foreground">
-            {t('courierKeysDesc')}
-          </p>
-
-          <Separator />
-
-          {[
-            { name: 'yalidineApiKey', label: 'Yalidine', placeholder: 'yal_...' },
-            { name: 'aramexApiKey', label: 'Aramex', placeholder: 'amx_...' },
-            { name: 'jexportApiKey', label: 'Jexport', placeholder: 'jxp_...' },
-          ].map(({ name, label, placeholder }) => (
-            <div key={name} className="space-y-1.5">
-              <Label htmlFor={name}>{label}</Label>
-              <Input id={name} name={name} type="password" placeholder={placeholder} className="text-sm font-mono" />
-            </div>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-3">
           <Button
             type="submit"
-            className="rounded-md text-sm font-medium transition-colors"
+            size="sm"
+            disabled={savingStore}
+            className="rounded-md text-xs font-medium"
           >
-            {tc('saveChanges')}
+            {savingStore ? tc('saving') : tc('saveChanges')}
           </Button>
-          {saved && <span className="text-xs text-green-700 dark:text-green-400">{t('savedSuccess')}</span>}
         </div>
       </form>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">{t('courierKeys')}</h2>
+          <p className="mt-1 text-xs text-muted-foreground">{t('carriersDesc')}</p>
+        </div>
+
+        {loadError ? (
+          // Rendered rather than toasted: a page that failed to load is a
+          // standing state the merchant can retry, not a transient event.
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400">
+            <AlertCircle size={14} className="shrink-0" />
+            <span className="min-w-0 flex-1">{getError(loadError)}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={reloadAccounts}
+              className="rounded-md text-xs"
+            >
+              {tc('retry')}
+            </Button>
+          </div>
+        ) : account === null ? (
+          <Skeleton className="h-96 w-full rounded-lg" />
+        ) : (
+          <AramexForm account={account} onSaved={reloadAccounts} />
+        )}
+      </section>
     </div>
   );
 }

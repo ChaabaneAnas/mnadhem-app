@@ -1,4 +1,4 @@
-import { IsString, MinLength, Matches, IsOptional } from 'class-validator';
+import { IsString, MinLength, Matches } from 'class-validator';
 
 export class CreateTenantDto {
   @IsString()
@@ -10,7 +10,8 @@ export class CreateTenantDto {
   @Matches(/^[a-z0-9-]+$/, { message: 'SLUG_INVALID_FORMAT' })
   slug!: string;
 
-  @IsOptional() @IsString() yalidineApiKey?: string;
-  @IsOptional() @IsString() aramexApiKey?: string;
-  @IsOptional() @IsString() jexportApiKey?: string;
+  // Courier credentials used to live here as three plaintext columns. They now
+  // belong to CourierAccount, one row per configured carrier, encrypted at rest
+  // and reachable only through /couriers/accounts — which also keeps a carrier's
+  // outbound API key separate from its inbound webhook secret.
 }

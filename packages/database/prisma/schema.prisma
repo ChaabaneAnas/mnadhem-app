@@ -11,11 +11,10 @@ datasource db {
 // Enums
 // ---------------------------------------------------------------------------
 
-/// Supported courier integrations
+/// Supported courier integrations. Aramex is the only one implemented; the enum
+/// is kept so Shipment and WebhookEvent stay ready for a second carrier.
 enum Courier {
-  YALIDINE
   ARAMEX
-  JEXPORT
 }
 
 /// State machine for a shipment, driven by courier webhook events.
@@ -41,13 +40,20 @@ enum Role {
 
 /// Merchant-facing business state of an order, driven by merchant actions and courier webhooks.
 /// Runs in parallel with ShipmentStatus (the courier-facing logistics state).
+///
+/// The three pre-transit states are all "stock reserved, parcel not yet collected" — they differ
+/// only in how far the merchant has got with the courier's paperwork, and none of them moves stock.
 /// Transitions:
-///   PENDING_FULFILLMENT → PROCESSING : IN_TRANSIT webhook (stock already reserved, no mutation)
-///   PENDING_FULFILLMENT → CANCELLED  : merchant cancels (stock rollback: Available++, Reserved--)
-///   PROCESSING → DELIVERED           : DELIVERED webhook (Physical--, Reserved--)
-///   PROCESSING → RETURNED            : RETURNED / OUT_OF_ZONE webhook (Reserved--, Available++)
+///   PENDING_FULFILLMENT → READY_FOR_SHIPMENT : merchant generates AWB / label (no stock mutation)
+///   READY_FOR_SHIPMENT  → PICKUP_REQUESTED   : courier accepted the pickup request (no stock mutation)
+///   any pre-transit     → PROCESSING         : IN_TRANSIT webhook (stock already reserved, no mutation)
+///   any pre-transit     → CANCELLED          : merchant cancels (stock rollback: Available++, Reserved--)
+///   PROCESSING → DELIVERED                   : DELIVERED webhook (Physical--, Reserved--)
+///   PROCESSING → RETURNED                    : RETURNED / OUT_OF_ZONE webhook (Reserved--, Available++)
 enum OrderStatus {
   PENDING_FULFILLMENT
+  READY_FOR_SHIPMENT
+  PICKUP_REQUESTED
   PROCESSING
   DELIVERED
   RETURNED
@@ -93,16 +99,95 @@ model Tenant {
   /// How this tenant captures orders — drives onboarding path and sync-warning guardrails
   storeType StoreType @default(MANUAL)
 
-  /// Per-tenant courier API credentials (nullable until configured)
-  yalidineApiKey String?
-  aramexApiKey   String?
-  jexportApiKey  String?
-
   members         TenantMember[]
   products        Product[]
   orders          Order[]
   webhookEvents   WebhookEvent[]
   metricSnapshots MetricSnapshot[]
+  /// The tenant's carrier credentials. Replaces the former
+  /// yalidineApiKey/aramexApiKey/jexportApiKey columns, which conflated the
+  /// inbound webhook secret with the outbound API credential.
+  courierAccounts CourierAccount[]
+}
+
+/// A tenant's Aramex credentials and shipping defaults.
+///
+/// This is a table rather than columns on Tenant because Aramex authenticates
+/// with a six-field `ClientInfo` block — username, password, account number,
+/// PIN, entity and country code — not a single API key.
+///
+/// Secrets are stored as `v1:<iv>:<tag>:<ciphertext>` (AES-256-GCM) and are
+/// never returned by the API; Settings shows only a "configured" hint.
+model CourierAccount {
+  id      String  @id @default(cuid())
+  courier Courier @default(ARAMEX)
+  enabled Boolean @default(false)
+
+  // --- Aramex ClientInfo (sent with every outbound request) ---
+  /// Aramex login email. Not secret — shown back in Settings.
+  username           String?
+  passwordCipher     String?
+  /// Aramex account number. Shown back in Settings.
+  accountNumber      String?
+  accountPinCipher   String?
+  /// 3-character transmitting-party code, issued by Aramex.
+  accountEntity      String?
+  /// ISO 2-letter country of the account.
+  accountCountryCode String?
+  /// ClientInfo.Version. The manual never states the expected value (max length
+  /// 4), so it is editable rather than hardcoded.
+  version            String  @default("v1.0")
+
+  // --- Shipping defaults ---
+  /// EXP (Express) or DOM (Domestic).
+  productGroup String @default("EXP")
+  /// See Appendix A. The manual documents International Express codes only, so
+  /// a domestic account needs a value supplied by Aramex.
+  productType  String @default("PPX")
+  /// Currency for CashOnDeliveryAmount. The manual requires USD, which does not
+  /// fit a TND domestic parcel — configurable pending an answer from Aramex.
+  codCurrency  String @default("USD")
+
+  /// Routes calls to ws.dev.aramex.net instead of ws.aramex.net.
+  testMode Boolean @default(true)
+
+  // --- Shipper / pickup identity ---
+  // Aramex requires a full Shipper party on every CreateShipments call, and the
+  // same details again as PickupAddress/PickupContact on CreatePickup. Nothing
+  // else in the app holds a merchant's physical address, so it lives here.
+  // shipperEmail also stands in as the consignee email, which Aramex requires
+  // (REQ24) but a COD order never captures.
+  shipperCompany     String?
+  shipperContactName String?
+  shipperPhone       String?
+  shipperCellPhone   String?
+  shipperEmail       String?
+  shipperLine1       String?
+  shipperCity        String?
+  shipperStateCode   String?
+  shipperPostCode    String?
+  /// ISO 2-letter. Defaults to the account country when left empty.
+  shipperCountryCode String?
+
+  /// Inbound webhook shared secret. Deliberately separate from the outbound
+  /// credentials — they were one column before, so rotating either broke the other.
+  webhookSecretCipher String?
+
+  // --- Last "Test connection" result, surfaced in settings ---
+  lastTestedAt  DateTime?
+  lastTestOk    Boolean?
+  lastTestError String?
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shipments Shipment[]
+
+  /// One carrier per tenant, which is why there is no "default carrier" flag.
+  @@unique([tenantId])
 }
 
 /// Junction table granting a User access to a Tenant with a specific Role.
@@ -238,10 +323,27 @@ model OrderItem {
 /// Tracks the courier assignment, tracking number, and live delivery state
 /// for a single Order. Also records floating-capital remittance.
 model Shipment {
-  id             String         @id @default(cuid())
+  id String @id @default(cuid())
+  /// The courier's AWB / waybill number — returned by the carrier when the label
+  /// is generated, and the key inbound webhooks are matched on.
   trackingNumber String         @unique
   courier        Courier
   status         ShipmentStatus @default(PENDING)
+
+  /// Which configured carrier produced this AWB. Null for shipments created
+  /// before carrier accounts existed, or entered by hand via POST /shipments.
+  courierAccountId String?
+  courierAccount   CourierAccount? @relation(fields: [courierAccountId], references: [id])
+
+  // --- Label & pickup, populated by the on-demand fulfillment actions ---
+  /// The label PDF itself. Stored inline so bulk printing can merge labels
+  /// without re-fetching from the carrier — they are ~50-200KB each.
+  labelPdf          Bytes?
+  /// Carrier-hosted label URL, when the carrier returns one instead of bytes
+  labelPdfUrl       String?
+  awbGeneratedAt    DateTime?
+  pickupReference   String?
+  pickupScheduledAt DateTime?
 
   /// Cash collected from the customer by the courier (set on DELIVERED)
   collectedCash Decimal?  @db.Decimal(10, 2)

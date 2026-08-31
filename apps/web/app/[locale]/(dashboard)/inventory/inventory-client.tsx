@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1022,7 +1021,7 @@ export function InventoryClient({
                                   {/* Product header */}
                                   <div className="flex items-start justify-between gap-2 bg-muted/60 border-b border-border px-4 py-3">
                                       <div className="min-w-0">
-                                          <p className="text-sm font-medium text-foreground break-words">
+                                          <p className="text-sm font-medium text-foreground wrap-break-words">
                                               {product.name}
                                           </p>
                                           {product.sku && (

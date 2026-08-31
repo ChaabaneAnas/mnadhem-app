@@ -37,6 +37,18 @@ const ORDER_STATUS_MAP: Partial<Record<WebhookEventType, OrderStatus>> = {
   OUT_OF_ZONE: OrderStatus.RETURNED,
 };
 
+// Every state a manual order can sit in while its stock is already reserved and
+// the courier has not yet collected the parcel. Generating an AWB and requesting
+// a pickup move an order through these without touching inventory, so all three
+// must suppress the IN_TRANSIT reservation below — testing only for
+// PENDING_FULFILLMENT would let a parcel reserve its stock a second time the
+// moment the merchant used either fulfillment action.
+const PRE_TRANSIT_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  OrderStatus.PENDING_FULFILLMENT,
+  OrderStatus.READY_FOR_SHIPMENT,
+  OrderStatus.PICKUP_REQUESTED,
+]);
+
 @Injectable()
 export class InventoryStateMachineService {
   private readonly logger = new Logger(InventoryStateMachineService.name);
@@ -126,12 +138,11 @@ export class InventoryStateMachineService {
       const stockDeltas: unknown[] = [];
 
       if (shipment && deltaSign) {
-        // IN_TRANSIT on a PENDING_FULFILLMENT order means stock was already
-        // reserved at manual order creation time — skip the inventory mutation
-        // and only advance the statuses to avoid a double-reservation.
+        // IN_TRANSIT on an order that has not yet been collected means stock was
+        // already reserved at manual order creation time — skip the inventory
+        // mutation and only advance the statuses to avoid a double-reservation.
         const stockAlreadyReserved =
-          event === 'IN_TRANSIT' &&
-          shipment.order.status === OrderStatus.PENDING_FULFILLMENT;
+          event === 'IN_TRANSIT' && PRE_TRANSIT_STATUSES.has(shipment.order.status);
 
         if (!stockAlreadyReserved) {
           for (const item of shipment.order.items) {

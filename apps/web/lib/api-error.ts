@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 
 /**
@@ -25,11 +26,19 @@ export function errorCode(err: unknown): string {
 /**
  * Hook returning a translator for thrown API errors. Maps a backend code to
  * its localized message, falling back to a generic message for unknown codes.
+ *
+ * Memoized so the returned function keeps a stable identity across renders.
+ * Without this it is a new closure every render, and any caller that lists it
+ * in a `useCallback`/`useEffect` dependency array re-runs that effect on every
+ * render — which is an infinite request loop when the effect fetches.
  */
 export function useErrorMessage() {
   const t = useTranslations('errors');
-  return (err: unknown): string => {
-    const code = errorCode(err);
-    return t.has(code) ? t(code) : t('unknown');
-  };
+  return useCallback(
+    (err: unknown): string => {
+      const code = errorCode(err);
+      return t.has(code) ? t(code) : t('unknown');
+    },
+    [t],
+  );
 }

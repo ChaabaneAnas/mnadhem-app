@@ -7,6 +7,7 @@ import { TenantsModule } from './tenants/tenants.module';
 import { ProductsModule } from './products/products.module';
 import { VariantsModule } from './variants/variants.module';
 import { OrdersModule } from './orders/orders.module';
+import { CouriersModule } from './couriers/couriers.module';
 import { ShipmentsModule } from './shipments/shipments.module';
 import { StatsModule } from './stats/stats.module';
 
@@ -20,6 +21,7 @@ import { StatsModule } from './stats/stats.module';
     ProductsModule,
     VariantsModule,
     OrdersModule,
+    CouriersModule,
     ShipmentsModule,
     StatsModule,
   ],

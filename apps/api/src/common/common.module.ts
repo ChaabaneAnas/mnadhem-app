@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtGuard } from './guards/jwt.guard';
+import { SecretCipherService } from './crypto/secret-cipher.service';
 
 @Global()
 @Module({
@@ -10,7 +11,7 @@ import { JwtGuard } from './guards/jwt.guard';
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  providers: [JwtGuard],
-  exports: [JwtModule, JwtGuard],
+  providers: [JwtGuard, SecretCipherService],
+  exports: [JwtModule, JwtGuard, SecretCipherService],
 })
 export class CommonModule {}

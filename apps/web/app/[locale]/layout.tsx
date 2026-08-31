@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { routing, isRtl } from "@/i18n/routing";
+import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: "Mnadhem — منظّم",
@@ -34,7 +35,11 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={isRtl(locale) ? "rtl" : "ltr"}>
       <body className={GeistSans.className}>
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          {children}
+          {/* Inside the intl provider so toast copy can be translated at the call site. */}
+          <Toaster />
+        </NextIntlClientProvider>
       </body>
     </html>
   );
