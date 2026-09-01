@@ -20,6 +20,14 @@ import type {
  * Two names look like typos and are not ours to fix: `AccountingInstrcutions`
  * and `TransportType_x0020_` (an XML-encoded trailing space) are spelled exactly
  * that way in Aramex's schema. Correcting them makes Aramex ignore the field.
+ *
+ * Every member of every contract is marked required. WCF rejects the whole
+ * request with an HTTP 400 and no `Notifications` when a member is merely
+ * absent — "the required data members 'Reference2, Reference3, Reference4,
+ * Reference5' were not found" — so each object below is sent complete, padding
+ * unused members with `''`, `0`, `[]` or `null` rather than omitting them. A
+ * member present as `null` satisfies the check; an absent one does not. Do not
+ * "tidy" the empty fields away.
  */
 
 const TEST_HOST = 'https://ws.dev.aramex.net';
@@ -71,7 +79,7 @@ export class AramexProvider {
     return `${host}${SERVICE_PATH}/${operation}`;
   }
 
-  /** Sent with every request. All eight fields are required (manual, p.22). */
+  /** Sent with every request. Every field is required (manual, p.22). */
   private clientInfo(creds: AramexCredentials): Record<string, unknown> {
     const { account, password, accountPin } = creds;
     return {
@@ -85,6 +93,23 @@ export class AramexProvider {
       // Integer, default 24 per the manual — Aramex assigns a different value
       // only if they set one up for data-mining purposes.
       Source: 24,
+      // Language Aramex writes its notification messages in. Not the merchant's
+      // dashboard locale: these strings are logged and mapped by code, not shown.
+      PreferredLanguageCode: 'en',
+    };
+  }
+
+  /**
+   * Aramex echoes this back untouched, so it correlates a response with the
+   * order that caused it. All five references are required even when unused.
+   */
+  private transaction(reference: string): Record<string, unknown> {
+    return {
+      Reference1: reference,
+      Reference2: '',
+      Reference3: '',
+      Reference4: '',
+      Reference5: '',
     };
   }
 
@@ -123,9 +148,14 @@ export class AramexProvider {
     return 'COURIER_API_ERROR';
   }
 
-  /** Aramex serialises dates as .NET `/Date(ms)/`; it also accepts ISO-8601. */
+  /**
+   * Aramex's WCF endpoint deserialises with `DataContractJsonSerializer`, which
+   * takes .NET epoch syntax only. An ISO-8601 string is rejected outright:
+   * "DateTime content '…Z' does not start with '/Date(' and end with ')/' as
+   * required".
+   */
   private date(value: Date): string {
-    return value.toISOString();
+    return `/Date(${value.getTime()})/`;
   }
 
   private money(value: number, currency: string): Record<string, unknown> {
@@ -161,22 +191,50 @@ export class AramexProvider {
 
     return {
       Reference1: '',
+      Reference2: '',
       AccountNumber: account.accountNumber,
       PartyAddress: this.shipperAddress(account),
       Contact: this.shipperContact(account),
     };
   }
 
-  private shipperAddress(account: CourierAccount): Record<string, unknown> {
+  /** All 16 members of Aramex's `Address` contract — see the header note. */
+  private address(parts: {
+    line1: string;
+    line2?: string | null;
+    city: string;
+    stateOrProvinceCode?: string | null;
+    postCode?: string | null;
+    countryCode: string;
+  }): Record<string, unknown> {
     return {
-      Line1: account.shipperLine1,
-      Line2: '',
+      Line1: parts.line1,
+      Line2: parts.line2 ?? '',
       Line3: '',
-      City: account.shipperCity,
-      StateOrProvinceCode: account.shipperStateCode ?? '',
-      PostCode: account.shipperPostCode ?? '',
-      CountryCode: account.shipperCountryCode || account.accountCountryCode,
+      City: parts.city,
+      StateOrProvinceCode: parts.stateOrProvinceCode ?? '',
+      PostCode: parts.postCode ?? '',
+      CountryCode: parts.countryCode,
+      Longitude: 0,
+      Latitude: 0,
+      BuildingNumber: '',
+      BuildingName: '',
+      Floor: '',
+      Apartment: '',
+      POBox: '',
+      Description: '',
+      AddressShortCode: '',
     };
+  }
+
+  private shipperAddress(account: CourierAccount): Record<string, unknown> {
+    return this.address({
+      line1: account.shipperLine1 ?? '',
+      city: account.shipperCity ?? '',
+      stateOrProvinceCode: account.shipperStateCode,
+      postCode: account.shipperPostCode,
+      countryCode: account.shipperCountryCode || account.accountCountryCode || '',
+    });
   }
 
   private shipperContact(account: CourierAccount): Record<string, unknown> {
@@ -205,16 +263,14 @@ export class AramexProvider {
   private consignee(request: AwbRequest, account: CourierAccount): Record<string, unknown> {
     return {
       Reference1: request.reference,
+      Reference2: '',
       AccountNumber: '',
-      PartyAddress: {
-        Line1: request.address || request.commune || request.wilaya,
-        Line2: request.commune ?? '',
-        Line3: '',
-        City: request.wilaya,
-        StateOrProvinceCode: '',
-        PostCode: '',
-        CountryCode: account.shipperCountryCode || account.accountCountryCode,
-      },
+      PartyAddress: this.address({
+        line1: request.address || request.commune || request.wilaya,
+        line2: request.commune,
+        city: request.wilaya,
+        countryCode: account.shipperCountryCode || account.accountCountryCode || '',
+      }),
       Contact: {
         Department: '',
         PersonName: request.customerName,
@@ -247,7 +303,7 @@ export class AramexProvider {
       method: 'POST',
       body: {
         ClientInfo: this.clientInfo(creds),
-        Transaction: { Reference1: 'connection-test' },
+        Transaction: this.transaction('connection-test'),
         ShipmentNumber: '0',
         ProductGroup: creds.account.productGroup,
         OriginEntity: creds.account.accountEntity,
@@ -289,6 +345,8 @@ export class AramexProvider {
       PickupGUID: '',
       // Left empty so Aramex allocates the waybill and returns it.
       Number: '',
+      ScheduledDelivery: null,
+      IsLocalized: false,
     };
 
     const body = (await courierFetch({
@@ -296,7 +354,7 @@ export class AramexProvider {
       method: 'POST',
       body: {
         ClientInfo: this.clientInfo(creds),
-        Transaction: { Reference1: request.reference },
+        Transaction: this.transaction(request.reference),
         Shipments: [shipment],
         LabelInfo: { ReportID: LABEL_REPORT_ID, ReportType: 'URL' },
       },
@@ -363,6 +421,13 @@ export class AramexProvider {
       // Comma-separated when there is more than one (manual, Table 22).
       Services: hasCod ? COD_SERVICE : '',
       Items: [],
+      DeliveryInstructions: null,
+      AdditionalProperties: [],
+      ContainsDangerousGoods: false,
+      PieceDimensions: [],
+      // Undocumented and unnamed for anything; Aramex's schema declares it and
+      // requires it present, like `AccountingInstrcutions`. Not ours to remove.
+      IsTrue: false,
     };
   }
 
@@ -395,7 +460,7 @@ export class AramexProvider {
       method: 'POST',
       body: {
         ClientInfo: this.clientInfo(creds),
-        Transaction: { Reference1: `pickup-${Date.now()}` },
+        Transaction: this.transaction(`pickup-${Date.now()}`),
         Pickup: {
           PickupAddress: this.shipperAddress(account),
           PickupContact: this.shipperContact(account),
@@ -426,6 +491,10 @@ export class AramexProvider {
             },
           ],
           Status: 'Ready',
+          ExistingShipments: [],
+          Branch: '',
+          RouteCode: '',
+          Dispatcher: 0,
         },
         LabelInfo: null,
       },
