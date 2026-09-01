@@ -33,8 +33,14 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} dir={isRtl(locale) ? "rtl" : "ltr"}>
-      <body className={GeistSans.className}>
+    // Browser extensions inject attributes into <html> and <body> before React
+    // hydrates — Grammarly (data-gr-ext-installed, data-new-gr-c-s-check-loaded)
+    // and Scribe (data-scribe-recorder-ready) among them — and React reports
+    // that as a hydration mismatch the app can neither prevent nor repair.
+    // The suppression below is one level deep, covering only these two elements'
+    // own attributes and text, so genuine mismatches inside the app still warn.
+    <html lang={locale} dir={isRtl(locale) ? "rtl" : "ltr"} suppressHydrationWarning>
+      <body className={GeistSans.className} suppressHydrationWarning>
         <NextIntlClientProvider>
           {children}
           {/* Inside the intl provider so toast copy can be translated at the call site. */}
