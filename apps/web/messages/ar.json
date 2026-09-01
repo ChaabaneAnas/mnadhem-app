@@ -12,6 +12,16 @@
     "comingSoon": "قريبًا",
     "retry": "إعادة المحاولة"
   },
+  "validation": {
+    "required": "هذا الحقل مطلوب.",
+    "email": "أدخل بريدًا إلكترونيًا صالحًا.",
+    "phone": "أدخل رقم هاتف صالحًا.",
+    "minLength": "يجب ألا يقل عن {count} أحرف.",
+    "maxLength": "يجب ألا يزيد عن {count} أحرف.",
+    "exactLength": "يجب أن يكون {count} أحرف بالضبط.",
+    "selectOne": "اختر خيارًا.",
+    "atLeastOne": "أضف واحدًا على الأقل."
+  },
   "language": {
     "label": "اللغة",
     "fr": "Français",

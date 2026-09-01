@@ -12,6 +12,16 @@
     "comingSoon": "Bientôt disponible",
     "retry": "Réessayer"
   },
+  "validation": {
+    "required": "Ce champ est requis.",
+    "email": "Saisissez une adresse e-mail valide.",
+    "phone": "Saisissez un numéro de téléphone valide.",
+    "minLength": "Doit contenir au moins {count} caractères.",
+    "maxLength": "Doit contenir au plus {count} caractères.",
+    "exactLength": "Doit contenir exactement {count} caractères.",
+    "selectOne": "Sélectionnez une option.",
+    "atLeastOne": "Ajoutez-en au moins un."
+  },
   "language": {
     "label": "Langue",
     "fr": "Français",
