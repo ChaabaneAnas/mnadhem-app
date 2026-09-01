@@ -1,16 +1,56 @@
 'use client';
 
-import { useCallback, useEffect, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { toast } from '@/hooks/use-toast';
 import { useErrorMessage } from '@/lib/api-error';
 import { AramexForm } from './_components/aramex-form';
 import { getAramexAccount, updateStore, type AramexAccountView } from './actions';
+
+/**
+ * Mirrors `CreateTenantDto`: name is `@MinLength(2)`, slug is
+ * `@Matches(/^[a-z0-9-]+$/)`. Blank stays legal on both — the store keeps the
+ * value it already has, which is what makes a partial save possible.
+ */
+function useStoreSchema() {
+  const tv = useTranslations('validation');
+  const te = useTranslations('errors');
+
+  return useMemo(
+    () =>
+      z.object({
+        name: z
+          .string()
+          .trim()
+          .refine((v) => v.length === 0 || v.length >= 2, {
+            message: tv('minLength', { count: 2 }),
+          }),
+        slug: z
+          .string()
+          .trim()
+          .refine((v) => v.length === 0 || /^[a-z0-9-]+$/.test(v), {
+            message: te('SLUG_INVALID_FORMAT'),
+          }),
+      }),
+    [tv, te],
+  );
+}
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -20,7 +60,12 @@ export default function SettingsPage() {
   const [account, setAccount] = useState<AramexAccountView | null>(null);
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadCount, setReloadCount] = useState(0);
-  const [savingStore, startSavingStore] = useTransition();
+
+  const schema = useStoreSchema();
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: { name: '', slug: '' },
+  });
 
   /**
    * Stable by construction: it closes over nothing and only bumps a counter,
@@ -57,23 +102,16 @@ export default function SettingsPage() {
    * Errors used to be swallowed here with a `// silent` comment, so a rejected
    * slug looked identical to a successful save.
    */
-  function handleSaveStore(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    const name = String(data.get('name') ?? '').trim();
-    const slug = String(data.get('slug') ?? '').trim();
-
-    startSavingStore(async () => {
-      try {
-        await updateStore({
-          ...(name ? { name } : {}),
-          ...(slug ? { slug } : {}),
-        });
-        toast({ variant: 'success', title: t('savedSuccess') });
-      } catch (err) {
-        toast({ variant: 'destructive', title: getError(err) });
-      }
-    });
+  async function onSubmit(values: z.infer<typeof schema>) {
+    try {
+      await updateStore({
+        ...(values.name ? { name: values.name } : {}),
+        ...(values.slug ? { slug: values.slug } : {}),
+      });
+      toast({ variant: 'success', title: t('savedSuccess') });
+    } catch (err) {
+      toast({ variant: 'destructive', title: getError(err) });
+    }
   }
 
   return (
@@ -83,31 +121,51 @@ export default function SettingsPage() {
         <p className="mt-0.5 text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
 
-      <form onSubmit={handleSaveStore} className="mb-8">
-        <div className="space-y-4 rounded-lg border border-border bg-card p-6">
-          <h2 className="text-sm font-semibold text-foreground">{t('storeDetails')}</h2>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="mb-8">
+          <div className="space-y-4 rounded-lg border border-border bg-card p-6">
+            <h2 className="text-sm font-semibold text-foreground">{t('storeDetails')}</h2>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="name">{t('storeName')}</Label>
-            <Input id="name" name="name" placeholder="My Store" className="text-sm" />
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem className="gap-1.5">
+                  <FormLabel>{t('storeName')}</FormLabel>
+                  <FormControl>
+                    <Input placeholder="My Store" className="text-sm" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="slug"
+              render={({ field }) => (
+                <FormItem className="gap-1.5">
+                  <FormLabel>{t('slug')}</FormLabel>
+                  <FormControl>
+                    <Input placeholder="my-store" className="font-mono text-sm" {...field} />
+                  </FormControl>
+                  <FormDescription className="text-xs">{t('slugHint')}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button
+              type="submit"
+              size="sm"
+              disabled={form.formState.isSubmitting}
+              className="rounded-md text-xs font-medium"
+            >
+              {form.formState.isSubmitting ? tc('saving') : tc('saveChanges')}
+            </Button>
           </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="slug">{t('slug')}</Label>
-            <Input id="slug" name="slug" placeholder="my-store" className="font-mono text-sm" />
-            <p className="text-xs text-muted-foreground">{t('slugHint')}</p>
-          </div>
-
-          <Button
-            type="submit"
-            size="sm"
-            disabled={savingStore}
-            className="rounded-md text-xs font-medium"
-          >
-            {savingStore ? tc('saving') : tc('saveChanges')}
-          </Button>
-        </div>
-      </form>
+        </form>
+      </Form>
 
       <section className="space-y-4">
         <div>

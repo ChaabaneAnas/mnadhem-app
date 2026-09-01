@@ -22,7 +22,8 @@ interface Variant {
   id: string;
   name: string;
   sku: string | null;
-  price: number;
+  /** Prisma `Decimal`, which serialises to a JSON string — see `codAmount`. */
+  price: string | number;
   stockAvailable: number;
   productId: string;
 }
@@ -52,7 +53,9 @@ export default async function OrdersPage() {
       id: v.id,
       name: v.name,
       sku: v.sku,
-      price: v.price,
+      // Normalised here, once, so every consumer downstream really does get
+      // the `number` that `PickerVariant` promises.
+      price: Number(v.price),
       stockAvailable: v.stockAvailable,
       productName: p.name,
     })),

@@ -1,12 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useForm, type UseFormReturn } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { ChevronLeft, MessageCircle, Globe } from 'lucide-react';
 import { createManualStore, createStorefrontStore } from './actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -17,35 +28,78 @@ import {
 
 type Track = 'MANUAL' | 'SHOPIFY' | null;
 
-function StoreFields({ defaultName, defaultSlug }: { defaultName?: string; defaultSlug?: string }) {
+/**
+ * The server action normalises the slug (lowercases it and rewrites anything
+ * outside `[a-z0-9-]` to a hyphen), so anything non-empty is acceptable here —
+ * validating the stricter shape would reject input the server would have fixed.
+ */
+function useStoreSchema() {
+  const tv = useTranslations('validation');
+
+  return useMemo(
+    () =>
+      z.object({
+        storeName: z.string().trim().min(1, { message: tv('required') }),
+        storeSlug: z.string().trim().min(1, { message: tv('required') }),
+        platform: z.string(),
+      }),
+    [tv],
+  );
+}
+
+type StoreFormValues = z.infer<ReturnType<typeof useStoreSchema>>;
+
+/**
+ * An error the server redirected back with — a slug taken between validating
+ * and saving, say. It is the server's verdict on the submission, so it is shown
+ * as one rather than attributed to an input the user may have typed correctly.
+ */
+function SetupError({ initialError }: { initialError?: string }) {
   const t = useTranslations('onboarding');
+  const tc = useTranslations('common');
+
+  if (!initialError) return null;
+
+  return (
+    <div className="mb-4 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+      {t.has(`errors.${initialError}`) ? t(`errors.${initialError}`) : tc('somethingWrong')}
+    </div>
+  );
+}
+
+function StoreFields({ form }: { form: UseFormReturn<StoreFormValues> }) {
+  const t = useTranslations('onboarding');
+
   return (
     <>
-      <div className="space-y-1.5">
-        <Label htmlFor="storeName">{t('storeName')}</Label>
-        <Input
-          id="storeName"
-          name="storeName"
-          type="text"
-          required
-          autoFocus
-          defaultValue={defaultName}
-          placeholder={t('storeNamePlaceholder')}
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="storeName"
+        render={({ field }) => (
+          <FormItem className="gap-1.5">
+            <FormLabel>{t('storeName')}</FormLabel>
+            <FormControl>
+              <Input autoFocus placeholder={t('storeNamePlaceholder')} {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-      <div className="space-y-1.5">
-        <Label htmlFor="storeSlug">{t('storeSlug')}</Label>
-        <Input
-          id="storeSlug"
-          name="storeSlug"
-          type="text"
-          required
-          defaultValue={defaultSlug}
-          placeholder={t('storeSlugPlaceholder')}
-        />
-        <p className="text-xs text-muted-foreground">{t('slugHint')}</p>
-      </div>
+      <FormField
+        control={form.control}
+        name="storeSlug"
+        render={({ field }) => (
+          <FormItem className="gap-1.5">
+            <FormLabel>{t('storeSlug')}</FormLabel>
+            <FormControl>
+              <Input placeholder={t('storeSlugPlaceholder')} {...field} />
+            </FormControl>
+            <FormDescription className="text-xs">{t('slugHint')}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </>
   );
 }
@@ -91,7 +145,9 @@ function TrackSelector({ onSelect }: { onSelect: (t: Track) => void }) {
           </div>
           <div>
             <p className="text-sm font-semibold text-foreground">{t('storefrontTitle')}</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('storefrontDesc')}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {t('storefrontDesc')}
+            </p>
           </div>
           <span className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground border border-border">
             {t('storefrontBadge')}
@@ -117,6 +173,15 @@ function BackButton({ onBack }: { onBack: () => void }) {
   );
 }
 
+/** The actions still take `FormData`, so validated values are packed back into one. */
+function toFormData(values: StoreFormValues, withPlatform: boolean): FormData {
+  const data = new FormData();
+  data.set('storeName', values.storeName);
+  data.set('storeSlug', values.storeSlug);
+  if (withPlatform) data.set('platform', values.platform);
+  return data;
+}
+
 function ManualSetupForm({
   onBack,
   initialError,
@@ -129,32 +194,44 @@ function ManualSetupForm({
   defaultSlug?: string;
 }) {
   const t = useTranslations('onboarding');
-  const tc = useTranslations('common');
+  const schema = useStoreSchema();
+  const form = useForm<StoreFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      storeName: defaultName ?? '',
+      storeSlug: defaultSlug ?? '',
+      platform: 'SHOPIFY',
+    },
+  });
+
   return (
     <div className="w-full max-w-sm">
       <BackButton onBack={onBack} />
 
       <div className="mb-8">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('createStoreTitle')}</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          {t('createStoreTitle')}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">{t('createStoreDesc')}</p>
       </div>
 
       <div className="rounded-lg border border-border bg-card p-6">
-        {initialError && (
-          <div className="mb-4 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-            {t.has(`errors.${initialError}`) ? t(`errors.${initialError}`) : tc('somethingWrong')}
-          </div>
-        )}
-
-        <form action={createManualStore} className="space-y-4">
-          <StoreFields defaultName={defaultName} defaultSlug={defaultSlug} />
-          <Button
-            type="submit"
-            className="w-full rounded-md text-sm font-medium transition-colors"
+        <SetupError initialError={initialError} />
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit((values) => createManualStore(toFormData(values, false)))}
+            className="space-y-4"
           >
-            {t('createStore')}
-          </Button>
-        </form>
+            <StoreFields form={form} />
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              className="w-full rounded-md text-sm font-medium transition-colors"
+            >
+              {t('createStore')}
+            </Button>
+          </form>
+        </Form>
       </div>
     </div>
   );
@@ -173,59 +250,85 @@ function StorefrontSetupForm({
 }) {
   const t = useTranslations('onboarding');
   const tc = useTranslations('common');
+  const schema = useStoreSchema();
+  const form = useForm<StoreFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      storeName: defaultName ?? '',
+      storeSlug: defaultSlug ?? '',
+      platform: 'SHOPIFY',
+    },
+  });
+
   return (
     <div className="w-full max-w-sm">
       <BackButton onBack={onBack} />
 
       <div className="mb-8">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t('setupStoreTitle')}</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          {t('setupStoreTitle')}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">{t('setupStoreDesc')}</p>
       </div>
 
       <div className="space-y-4">
         <div className="rounded-lg border border-border bg-card p-6">
-          {initialError && (
-            <div className="mb-4 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-              {t.has(`errors.${initialError}`) ? t(`errors.${initialError}`) : tc('somethingWrong')}
-            </div>
-          )}
-
-          <form action={createStorefrontStore} className="space-y-4">
-            <StoreFields defaultName={defaultName} defaultSlug={defaultSlug} />
-
-            <div className="space-y-1.5">
-              <Label htmlFor="platform">{t('platform')}</Label>
-              <Select name="platform" defaultValue="SHOPIFY">
-                <SelectTrigger id="platform" className="w-full">
-                  <SelectValue placeholder={t('selectPlatform')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="SHOPIFY">Shopify</SelectItem>
-                  <SelectItem value="WOOCOMMERCE">WooCommerce</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Integration coming-soon card */}
-            <div className="rounded-lg border border-border bg-muted p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-xs font-semibold text-foreground">{t('syncTitle')}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('syncDesc')}</p>
-                </div>
-                <span className="shrink-0 inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-                  {tc('comingSoon')}
-                </span>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full rounded-md text-sm font-medium transition-colors"
+          <SetupError initialError={initialError} />
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit((values) =>
+                createStorefrontStore(toFormData(values, true)),
+              )}
+              className="space-y-4"
             >
-              {t('continueToDashboard')}
-            </Button>
-          </form>
+              <StoreFields form={form} />
+
+              <FormField
+                control={form.control}
+                name="platform"
+                render={({ field }) => (
+                  <FormItem className="gap-1.5">
+                    <FormLabel>{t('platform')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('selectPlatform')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="SHOPIFY">Shopify</SelectItem>
+                        <SelectItem value="WOOCOMMERCE">WooCommerce</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Integration coming-soon card */}
+              <div className="rounded-lg border border-border bg-muted p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">{t('syncTitle')}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {t('syncDesc')}
+                    </p>
+                  </div>
+                  <span className="shrink-0 inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                    {tc('comingSoon')}
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                className="w-full rounded-md text-sm font-medium transition-colors"
+              >
+                {t('continueToDashboard')}
+              </Button>
+            </form>
+          </Form>
         </div>
       </div>
     </div>
